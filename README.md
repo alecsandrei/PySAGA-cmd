@@ -5,6 +5,7 @@ PySAGA-cmd allows the usage of SAGA GIS tools in a Python environment.
 - [How to download the package](#how-to-download)
 - [How to use the package](#how-to-use-the-package)
   - [Choosing a SAGA GIS tool](#choosing-a-saga-gis-tool)
+  - [Running a SAGA GIS tool](#running-a-saga-gis-tool)
 
 ## How to download
 
@@ -480,6 +481,148 @@ saga_tool.remove_flag()
     [0] radians
     [1] degree
     Default: 0
+
+### Running a SAGA GIS tool
+```python
+from PySAGA_cmd import (
+    SAGA,
+    Library,
+    Tool
+)
+```
+
+
+```python
+# Defining saga_cmd location
+saga_cmd = '/usr/local/bin/saga_cmd'
+
+# Instantiating a SAGA environment
+saga_env = SAGA(command=saga_cmd)
+
+# Choosing a library
+saga_library = saga_env.get_library('ta_morphometry')
+
+# Choosing a tool
+saga_tool = saga_library.get_tool(0)
+
+print(saga_tool)
+```
+
+    ____________________________
+    
+       #####   ##   #####    ##
+      ###     ###  ##       ###
+       ###   # ## ##  #### # ##
+        ### ##### ##    # #####
+     ##### #   ##  ##### #   ##
+    ____________________________
+    
+    SAGA Version: 9.3.0
+    
+    ____________________________
+    library path: /usr/local/lib/saga/
+    library path: /usr/local/lib/saga/
+    library name: libta_morphometry
+    library     : ta_morphometry
+    tool        : Slope, Aspect, Curvature
+    identifier  : 0
+    author      : O.Conrad (c) 2001
+    processors  : 4 [4]
+    ____________________________
+    
+    
+    Usage: saga_cmd ta_morphometry 0 [-ELEVATION <str>] [-SLOPE <str>] [-ASPECT <str>] [-C_GENE <str>] [-C_PROF <str>] [-C_PLAN <str>] [-C_TANG <str>] [-C_LONG <str>] [-C_CROS <str>] [-C_MINI <str>] [-C_MAXI <str>] [-C_TOTA <str>] [-C_ROTO <str>] [-METHOD <str>] [-UNIT_SLOPE <str>] [-UNIT_ASPECT <str>]
+      -ELEVATION:<str>  	Elevation
+    	grid, input
+      -SLOPE:<str>      	Slope
+    	grid, output
+      -ASPECT:<str>     	Aspect
+    	grid, output
+      -C_GENE:<str>     	General Curvature
+    	grid, output, optional
+      -C_PROF:<str>     	Profile Curvature
+    	grid, output, optional
+      -C_PLAN:<str>     	Plan Curvature
+    	grid, output, optional
+      -C_TANG:<str>     	Tangential Curvature
+    	grid, output, optional
+      -C_LONG:<str>     	Longitudinal Curvature
+    	grid, output, optional
+      -C_CROS:<str>     	Cross-Sectional Curvature
+    	grid, output, optional
+      -C_MINI:<str>     	Minimal Curvature
+    	grid, output, optional
+      -C_MAXI:<str>     	Maximal Curvature
+    	grid, output, optional
+      -C_TOTA:<str>     	Total Curvature
+    	grid, output, optional
+      -C_ROTO:<str>     	Flow Line Curvature
+    	grid, output, optional
+      -METHOD:<str>     	Method
+    	choice
+    	Available Choices:
+    	[0] maximum slope (Travis et al. 1975)
+    	[1] maximum triangle slope (Tarboton 1997)
+    	[2] least squares fitted plane (Horn 1981, Costa-Cabral & Burgess 1996)
+    	[3] 6 parameter 2nd order polynom (Evans 1979)
+    	[4] 6 parameter 2nd order polynom (Heerdegen & Beran 1982)
+    	[5] 6 parameter 2nd order polynom (Bauer, Rohdenburg, Bork 1985)
+    	[6] 9 parameter 2nd order polynom (Zevenbergen & Thorne 1987)
+    	[7] 10 parameter 3rd order polynom (Haralick 1983)
+    	[8] 10 parameter 3rd order polynom (Florinsky 2009)
+    	Default: 6
+      -UNIT_SLOPE:<str> 	Unit
+    	choice
+    	Available Choices:
+    	[0] radians
+    	[1] degree
+    	[2] percent rise
+    	Default: 0
+      -UNIT_ASPECT:<str>	Unit
+    	choice
+    	Available Choices:
+    	[0] radians
+    	[1] degree
+    	Default: 0
     
     
 
+
+
+```python
+dem_dir = '../data/example_input/DEM_30m.tif'
+
+output_dir = '../data/example_output/'
+slope_dir = output_dir + 'SLOPE_30m.tif'
+aspect_dir = output_dir + 'ASPECT_30m.tif'
+c_gene_dir = output_dir + 'C_GENE_30m.tif'
+c_prof_dir = output_dir + 'C_PROF_30m.tif'
+c_plan_dir = output_dir + 'C_PLAN_30m.tif'
+c_tang_dir = output_dir + 'C_TANG_30m.tif'
+c_long_dir = output_dir + 'C_LONG_30m.tif'
+c_cros_dir = output_dir + 'C_CROS_30m.tif'
+c_mini_dir = output_dir + 'C_MINI_30m.tif'
+c_maxi_dir = output_dir + 'C_MAXI_30m.tif'
+c_tota_dir = output_dir + 'C_TOTA_30m.tif'
+c_roto_dir = output_dir + 'C_ROTO_30m.tif'
+
+output = saga_tool.run_command(
+    elevation=dem_dir,
+    slope=slope_dir,
+    aspect=aspect_dir,
+    c_gene=c_gene_dir,
+    c_prof=c_prof_dir,
+    c_plan=c_plan_dir,
+    c_tang=c_tang_dir,
+    c_long=c_long_dir,
+    c_cros=c_cros_dir,
+    c_mini=c_mini_dir,
+    c_maxi=c_maxi_dir,
+    c_tota=c_tota_dir,
+    c_roto=c_roto_dir,
+    method='6',
+    unit_slope='1',
+    unit_aspect='1'
+)
+
+```
