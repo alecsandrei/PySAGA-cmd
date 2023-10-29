@@ -15,7 +15,7 @@ pip install PySAGA-cmd
 ```
 
 ## How to use the package
-For information on how to use the package, check the notebook examples.
+For information on how to use the package, check the docstrings or look at the notebook examples.
 
 ### Choosing a SAGA GIS tool
 ```python
