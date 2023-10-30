@@ -129,7 +129,7 @@ class SAGA:
             for k, v in kwargs.items():
                 self.command.append(f'-{k.upper()}')
                 self.command.append(v)
-        result = subprocess.run(self.command, capture_output=True, text=True)
+        result = subprocess.run(self.command, capture_output=True, text=True, shell=True)
         return result.stdout
 
 
