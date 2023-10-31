@@ -151,7 +151,7 @@ print(saga_env)
 
 ```python
 # Choosing a library
-saga_library = saga_env.get_library(library_name='ta_morphometry')
+saga_library = saga_env.get_library(library='ta_morphometry')
 print(saga_library)
 ```
 
@@ -223,7 +223,7 @@ print(saga_library)
 
 ```python
 # Choosing a tool
-saga_tool = saga_library.get_tool(tool_idx=0)
+saga_tool = saga_library.get_tool(tool='0')
 print(saga_tool)
 ```
 
@@ -500,10 +500,10 @@ saga_cmd = '/usr/local/bin/saga_cmd'
 saga_env = SAGA(command=saga_cmd)
 
 # Choosing a library
-saga_library = saga_env.get_library('ta_morphometry')
+saga_library = saga_env.get_library(library='ta_morphometry')
 
 # Choosing a tool
-saga_tool = saga_library.get_tool(0)
+saga_tool = saga_library.get_tool(tool='0')
 
 print(saga_tool)
 ```

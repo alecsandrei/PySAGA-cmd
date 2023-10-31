@@ -41,8 +41,8 @@ class SAGA:
         >>> saga_library = saga_env.get_library('ta_morphometry')
 
         Constructing a Tool class.
-        >>> saga_tool = saga_library.get_tool(0) # Option 1
-        >>> saga_tool = saga_env.get_tool(library_name='ta_morphometry', tool_idx=0) # Option 2
+        >>> saga_tool = saga_library.get_tool('0') # Option 1
+        >>> saga_tool = saga_env.get_tool(library='ta_morphometry', tool='0') # Option 2
 
         Executing a tool.
         >>> output = saga_tool.run_command(elevation='elevation.tif',
@@ -83,35 +83,35 @@ class SAGA:
         self._flag = flag
     
     def remove_flag(self):
-        """This method sets the flag to None and deletes it from the command pipe.
-        """
+        """This method sets the flag to None and deletes it from the command pipe."""
         if self.flag is None:
             raise ValueError('There is no flag in the command pipe.')
         del self.command[1]
         self._flag = None
 
-    def get_library(self, library_name: str) -> Type['Library']:
+    def get_library(self, library: str) -> Type['Library']:
         """This method creates a Library class instance.
         Args:
-            library_name: The name for a library (e.g. ta_morphometry)
+            library: The name for a library (e.g. ta_morphometry).
 
         Returns:
             Library: A Library class instance.
         """
-        library = Library(self, library_name)
+        library = Library(self, library)
         return library
     
-    def get_tool(self, library_name: str, tool_idx: int) -> Type['Tool']:
+    def get_tool(self, library: str, tool: str) -> Type['Tool']:
         """This method creates a Tool class instance.
         Args:
-            library_name: The name for a library (e.g. ta_morphometry).
-            tool_idx: The index of a tool inside the library (e.g. 17).
+            library: The name for a library (e.g. ta_morphometry).
+            tool: The name (index) of a tool inside the library (e.g. '17') that is shown inside square brackets
+                when printing the Library object.
 
         Returns:
             Tool: A Tool class instance.
         """
-        library = self.get_library(library_name)
-        return library.get_tool(tool_idx)
+        library = self.get_library(library)
+        return library.get_tool(tool)
     
     def run_command(self, *args, **kwargs) -> str:
         """This method executes a command with optinal arguments and keyword arguments.
@@ -129,7 +129,7 @@ class SAGA:
             for k, v in kwargs.items():
                 self.command.append(f'-{k.upper()}')
                 self.command.append(v)
-        result = subprocess.run(self.command, capture_output=True, text=True, shell=True)
+        result = subprocess.run(self.command, capture_output=True, text=True)
         return result.stdout
 
 
@@ -140,12 +140,12 @@ class Library(SAGA):
     ----------
     SAGA : SAGA
         The parent SAGA instance.
-    library_name : str
+    library : str
         The name of the SAGA library.
 
     Attributes
     ----------
-    library_name : str
+    name : str
         The name of the SAGA library.
 
     Examples
@@ -161,25 +161,26 @@ class Library(SAGA):
     >>> saga_library = Library(saga_env, 'ta_morphometry')
     """
 
-    def __init__(self, SAGA: SAGA, library_name: str):
-        super().__init__(SAGA.command + [library_name])
-        self.library_name = library_name
-
+    def __init__(self, SAGA: SAGA, library: str):
+        super().__init__(SAGA.command + [library])
+        self.name = library
+        
     def __str__(self):
         return self.run_command()
 
     def __repr__(self):
         return self.run_command()
 
-    def get_tool(self, tool_idx: int) -> Type['Tool']:
+    def get_tool(self, tool: str) -> Type['Tool']:
         """This method creates a Tool class instance.
         Args:
-            tool_idx: The index of a tool inside the library (e.g. 17).
+            tool: The name (index) of a tool inside the library (e.g. '17') that is shown inside square brackets
+                when printing the Library object.
 
         Returns:
             Tool: A Tool class instance.
         """
-        tool = Tool(self, tool_idx)
+        tool = Tool(self, tool)
         return tool
 
 
@@ -190,12 +191,13 @@ class Tool(SAGA):
     ----------
     library : Library
         A Library class instance.
-    tool_idx : idx
-        The index of the SAGA tool inside the library.
+    tool : str
+        The name (index) of a tool inside the library (e.g. '17') that is shown inside square brackets
+                when printing the Library object.
 
     Attributes
     ----------
-    tool_idx : int
+    tool : str
         The index of the SAGA tool inside the library.
 
     Examples
@@ -206,24 +208,22 @@ class Tool(SAGA):
         Option 1
     >>> saga_env = SAGA('/usr/local/bin/saga_cmd')  # on a Linux operating system
     >>> saga_library = saga_env.get_library('ta_morphometry')
-    >>> saga_tool = saga_library.get_tool(0)
+    >>> saga_tool = saga_library.get_tool(tool='0')
         Option 2
     >>> saga_env = SAGA('/usr/local/bin/saga_cmd')  # on a Linux operating system
     >>> saga_library = Library(saga_env, 'ta_morphometry')
-    >>> saga_tool = Tool(saga_library, 0)
+    >>> saga_tool = Tool(saga_library, '0')
         Option 3
     >>> saga_env = SAGA('/usr/local/bin/saga_cmd')  # on a Linux operating system
-    >>> saga_tool = saga_env.get_tool(library_name='ta_morphometry', tool_idx=0)
+    >>> saga_tool = saga_env.get_tool(library='ta_morphometry', tool='0')
     """
 
-    def __init__(self, library: Library, tool_idx: int):
-        self.tool_idx = tool_idx
-        super().__init__(library.command + [str(tool_idx)])
+    def __init__(self, library: Library, tool: str):
+        self.tool = tool
+        super().__init__(library.command + [tool])
 
     def __str__(self):
         return self.run_command()
 
     def __repr__(self):
         return self.run_command()
-    
-

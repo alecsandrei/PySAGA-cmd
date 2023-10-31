@@ -1,17 +1,18 @@
 from setuptools import setup, find_packages
 
+with open('README.md') as f:
+    long_description = f.read()
 
-VERSION = '0.0.2'
-DESCRIPTION = 'A package that allows you to run SAGA GIS tools in a Python environment.'
-LONG_DESCRIPTION = 'A package that allows you to run SAGA GIS tools in a Python environment by running terminal commands.'
+version = '0.0.4'
+description = 'A package that allows you to run SAGA GIS tools in a Python environment.'
 
 setup(
     name='PySAGA-cmd',
-    version=VERSION,
+    version=version,
     author='Cuvuliuc Alex-Andrei',
     author_email="<cuvuliucalexandrei@gmail.com>",
-    description=DESCRIPTION,
-    long_description=LONG_DESCRIPTION,
+    description=description,
+    long_description=long_description,
     long_description_content_type='text/markdown',
     url='https://github.com/alecsandrei/PySAGA-cmd',
     packages=find_packages(),
