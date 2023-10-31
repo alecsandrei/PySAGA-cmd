@@ -4,10 +4,14 @@ import tempfile
 
 from PySAGA_cmd import SAGA
 
+
 class Geomorphometry:
     """
     This class will be used to generate first and second derivatives of elevation,
-    as well as descriptive statistics of those derivatives.
+    as well as descriptive statistics of those derivatives. After generating the
+    derivatives, watershed segments of vector ruggedness measure will be generated,
+    converted to shapes and enriched with descriptives statistics of the derivatives
+    of elevation.
     """
 
     def __init__(self, saga_cmd_dir: str, dem_dir: str, output_dir: str):
@@ -116,7 +120,7 @@ class Geomorphometry:
         conv = self.saga_env.get_tool('ta_morphometry', '21')
         output = conv.run_command(
             dem=self.dem_dir,
-            convexity=self.output_dir + 'convexity.tif',
+            convexity=self.output_dir + 'conv.tif',
             kernel='0',
             type='0',
             epsilon='0',
@@ -132,8 +136,8 @@ class Geomorphometry:
         to = self.saga_env.get_tool('ta_lighting', '5')
         output = to.run_command(
             dem=self.dem_dir,
-            pos=self.output_dir + 'to_pos.tif',
-            neg=self.output_dir + 'to_neg.tif',
+            pos=self.output_dir + 'poso.tif',
+            neg=self.output_dir + 'nego.tif',
             radius='10000',
             method='1',
             dlevel='3.0',
@@ -147,16 +151,16 @@ class Geomorphometry:
             elevation=self.dem_dir,
             slope=self.output_dir + 'slope.tif',
             # aspect=self.output_dir + 'aspect.tif',
-            c_gene=self.output_dir + 'c_gene.tif',
-            c_prof=self.output_dir + 'c_prof.tif',
-            c_plan=self.output_dir + 'c_plan.tif',
-            c_tang=self.output_dir + 'c_tang.tif',
-            c_long=self.output_dir + 'c_long.tif',
-            c_cros=self.output_dir + 'c_cros.tif',
-            c_mini=self.output_dir + 'c_mini.tif',
-            c_maxi=self.output_dir + 'c_maxi.tif',
-            c_tota=self.output_dir + 'c_tota.tif',
-            c_roto=self.output_dir + 'c_roto.tif',
+            c_gene=self.output_dir + 'cgene.tif',
+            c_prof=self.output_dir + 'cprof.tif',
+            c_plan=self.output_dir + 'cplan.tif',
+            c_tang=self.output_dir + 'ctang.tif',
+            c_long=self.output_dir + 'clong.tif',
+            c_cros=self.output_dir + 'ccros.tif',
+            c_mini=self.output_dir + 'cmini.tif',
+            c_maxi=self.output_dir + 'cmaxi.tif',
+            c_tota=self.output_dir + 'ctota.tif',
+            c_roto=self.output_dir + 'croto.tif',
             method='6',
             unit_slope='0',
             unit_aspect='0'
@@ -175,7 +179,7 @@ class Geomorphometry:
         exposition = self.saga_env.get_tool('ta_morphometry', '27')
         output = exposition.run_command(
             dem=self.dem_dir,
-            exposition=self.output_dir + 'exposition.tif',
+            exposition=self.output_dir + 'wind.tif',
             maxdist='300.0',
             step='15.0',
             oldver='0',
@@ -203,7 +207,7 @@ class Geomorphometry:
         valley_depth = self.saga_env.get_tool('ta_channels', '7')
         output = valley_depth.run_command(
             elevation=self.dem_dir,
-            valley_depth=self.output_dir + 'valley_depth.tif',
+            valley_depth=self.output_dir + 'vld.tif',
             # ridge_level=None
             threshold='1.0',
             nounderground='1',
@@ -250,7 +254,7 @@ class Geomorphometry:
         texture = self.saga_env.get_tool('ta_morphometry', '20')
         output = texture.run_command(
             dem=self.dem_dir,
-            texture=self.output_dir + 'texture.tif',
+            texture=self.output_dir + 'txt.tif',
             epsilon='1',
             scale='10',
             method='1',
@@ -265,11 +269,11 @@ class Geomorphometry:
         upslope_downslope_curvature = self.saga_env.get_tool('ta_morphometry', '26')
         output = upslope_downslope_curvature.run_command(
             dem=self.dem_dir,
-            c_local=self.output_dir + 'c_local.tif',
-            c_up=self.output_dir + 'c_up.tif',
-            c_up_local=self.output_dir + 'c_up_local.tif',
-            c_down=self.output_dir + 'c_down.tif',
-            c_down_local=self.output_dir + 'c_down_local.tif',
+            c_local=self.output_dir + 'clo.tif',
+            c_up=self.output_dir + 'cup.tif',
+            c_up_local=self.output_dir + 'clu.tif',
+            c_down=self.output_dir + 'cdo.tif',
+            c_down_local=self.output_dir + 'cdl.tif',
             weighting='0.5'
         )
         return output
@@ -278,7 +282,7 @@ class Geomorphometry:
         flow_accumulation = self.saga_env.get_tool('ta_hydrology', '29')
         output = flow_accumulation.run_command(
             dem=self.hydro_dem_preprocessed,
-            flow=self.output_dir + 'flow_accumulation.tif',
+            flow=self.output_dir + 'flo.tif',
             update='0',
             method='0',
             convergence='1.1'
@@ -290,7 +294,7 @@ class Geomorphometry:
         output = flow_path_length.run_command(
             elevation=self.hydro_dem_preprocessed,
             # seed=None,
-            length=self.output_dir + 'length.tif',
+            length=self.output_dir + 'fpl.tif',
             method='1',
             convergence='1.1'
         )
@@ -300,7 +304,7 @@ class Geomorphometry:
         slope_length = self.saga_env.get_tool('ta_hydrology', '7')
         output = slope_length.run_command(
             dem=self.dem_dir,
-            length=self.output_dir + 'slope_length.tif'
+            length=self.output_dir + 'spl.tif'
         )
         return output
     
@@ -310,7 +314,7 @@ class Geomorphometry:
             dem=self.dem_dir,
             #weights=None,
             weights_default='1',
-            balance=self.output_dir + 'cell_balance.tif',
+            balance=self.output_dir + 'cbl.tif',
             method='0'
         )
         return output
@@ -340,7 +344,7 @@ class Geomorphometry:
             self.tools[name]()
             print(f'{name} execution finished.')
 
-    def grid_statistics_for_polygons(self):
+    def grid_statistics_for_polygons(self) -> str:
         # Use glob to find all files with a .tif extension
         grids = glob.glob(os.path.join(output_dir, '*.tif'))
         # Convert file names to full paths
@@ -366,13 +370,12 @@ class Geomorphometry:
             gini='0',
             quantiles='5; 25; 50; 75; 95'
         )
-        print(output)
         return output
 
 
 if __name__ == "__main__":
-    dem_dir = r'/media/alex/SSD_ALEX/scripts/geomorphology/test_areas/test_area_30m.tif'
+    dem_dir = r'/media/alex/SSD_ALEX/scripts/geomorphology/test_areas/dem.tif'
     output_dir = r'/media/alex/SSD_ALEX/scripts/geomorphology/test_areas/test_area_output/'
     geo = Geomorphometry('saga_cmd', dem_dir, output_dir)
-    # vrm = geo.execute_tools(tools=['vector_ruggedness_measure'])
+    geo.execute_tools()
     geo.grid_statistics_for_polygons()
