@@ -1,6 +1,16 @@
+# This script is only an example on how to integrate PySAGA-cmd in your workflow.
+
 import os
 import glob
 import tempfile
+
+# To run some of this script, you will need to download and import Geopandas.
+# Geopandas will be used to add a binary label to the watershed segments,
+# more precisely the segments overlapping a landslided area will receive
+# a '1' label, and those who do not overlap a landslided area will receive
+# a '0' label. Landslided areas are not provided in the github repo and
+# they have been manually digitized from a LiDAR DEM.
+import geopandas as gpd
 
 from PySAGA_cmd import SAGA
 
@@ -78,23 +88,24 @@ class Geomorphometry:
         if self._vrm_watershed_segments is None:
             if 'vrm.tif' not in glob.glob(os.path.join(self.output_dir, '*.tif')):
                 self.vector_ruggedness_measure()
+            grid_input = self.output_dir + 'vrm.tif'
             grid_segments = self.temp_dir + '/vrm_watershed_segments.tif'
             shape_segments = self.output_dir + 'shapes/vrm_watershed_segments.shp'
             watershed_segmentation = self.saga_env.get_tool('imagery_segmentation', '0')
             watershed_segmentation.run_command(
-                grid=self.dem_dir,
+                grid=grid_input,
                 segments=grid_segments,
                 seeds=self.temp_dir + '/seeds.shp',
                 borders=self.temp_dir + '/borders.tif',
                 output='1',
-                down='1',
+                down='0',
                 join='0',
                 threshold='0',
                 edge='1',
                 bborders='0'
             )
             watershed_segmentation_shapes = self.saga_env.get_tool('shapes_grid', '6')
-            output = watershed_segmentation_shapes.run_command(
+            watershed_segmentation_shapes.run_command(
                 grid=grid_segments,
                 polygons=shape_segments,
                 class_all='1',
@@ -104,6 +115,29 @@ class Geomorphometry:
             )
             self._vrm_watershed_segments = shape_segments
         return self._vrm_watershed_segments
+
+    @staticmethod
+    def label_watershed_segments(segments: str) -> str:
+        """This method will label the segments. It will create
+        a boolean 'landslide' field.  
+        
+        Args:
+            segments (str): the folder location of the segments
+
+        Returns:
+            str: the folder location of the labeled segments
+        """
+        os.chdir('/media/alex/SSD_ALEX/scripts/geomorphology/test_areas/jijioara')
+        labeled_segments_output = 'grids/output/shapes/vrm_watershed_segments_labeled.shp'
+        training = gpd.read_file(r'alunecari_training.shp')
+        testing = gpd.read_file(r'alunecari_testing.shp')
+        segments = gpd.read_file(segments).drop(columns=['VALUE', 'NAME'])
+        training_mask = segments.intersects(training.dissolve().geometry[0])
+        testing_mask = segments.intersects(testing.dissolve().geometry[0])
+        segments_landslide = ((training_mask + testing_mask) >= 1).astype(int)
+        segments['landslide'] = segments_landslide
+        segments.to_file(labeled_segments_output)
+        return labeled_segments_output
 
     # First and second derivatives of elevation
     def index_of_convergence(self) -> str:
@@ -354,7 +388,7 @@ class Geomorphometry:
         grid_statistics_for_polygons = self.saga_env.get_tool('shapes_grid', '2')
         output = grid_statistics_for_polygons.run_command(
             grids=';'.join(grids),
-            polygons=self.vrm_watershed_segments,
+            polygons=self.label_watershed_segments(self.vrm_watershed_segments),
             naming='1',
             method='0',
             parallelized='0',
@@ -374,8 +408,8 @@ class Geomorphometry:
 
 
 if __name__ == "__main__":
-    dem_dir = r'/media/alex/SSD_ALEX/scripts/geomorphology/test_areas/dem.tif'
-    output_dir = r'/media/alex/SSD_ALEX/scripts/geomorphology/test_areas/test_area_output/'
+    dem_dir = r'/media/alex/SSD_ALEX/scripts/geomorphology/test_areas/jijioara/grids/jijioara.tif' # here you input your dem location
+    output_dir = r'/media/alex/SSD_ALEX/scripts/geomorphology/test_areas/jijioara/grids/output/' # here you put your output location, make sure to create a shapes subfolder inside it!
     geo = Geomorphometry('saga_cmd', dem_dir, output_dir)
     geo.execute_tools()
     geo.grid_statistics_for_polygons()
