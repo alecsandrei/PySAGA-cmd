@@ -8,7 +8,7 @@ with open('README.md') as f:
 
 here = op.abspath(op.dirname(__file__))
 
-version = '0.0.5'
+version = '0.0.6'
 description = 'A package that allows you to run SAGA GIS tools in a Python environment.'
 
 with io.open(op.join(here, "requirements.txt"), encoding="utf-8") as f:

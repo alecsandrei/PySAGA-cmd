@@ -97,18 +97,17 @@ class SAGA:
         library = Library(self, library_name)
         return library
     
-    def get_tool(self, library: str, tool: str) -> Type['Tool']:
+    def get_tool(self, library_name: str, tool_name: str) -> Type['Tool']:
         """This method creates a Tool class instance.
         Args:
-            library: The name for a library (e.g. ta_morphometry).
-            tool: The name (index) of a tool inside the library (e.g. '17') that is shown inside square brackets
-                when printing the Library object.
+            library_name: The name for a library (e.g. ta_morphometry).
+            tool_name: The name of a tool inside the library (e.g. '17').
 
         Returns:
             Tool: A Tool class instance.
         """
-        library = self.get_library(library)
-        return library.get_tool(tool)
+        library = self.get_library(library_name)
+        return library.get_tool(tool_name)
     
     def run_command(self, *args, **kwargs) -> Output:
         """This method executes a command with optinal arguments and keyword arguments.
@@ -269,4 +268,4 @@ if __name__ == '__main__':
     output = saga_tool.run_command(elevation=dem,
                                    shade=shade,
                                    method='2')
-    output.plot_raster('elevation')
+    output.plot_raster('shade')
