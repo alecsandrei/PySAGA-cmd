@@ -612,9 +612,6 @@ print(saga_tool.run_command().text)
     	[1] degree
     	Default: 0
     
-    
-
-
 
 ```python
 dem_dir = '../../data/example_input/DEM_30m.tif'
@@ -660,9 +657,6 @@ output = saga_tool.run_command(
 print(output.text)
 ```
 
-    ____________________________
-
-
 
 ```python
 output.plot_raster('elevation', cmap='terrain')
@@ -670,14 +664,6 @@ output.plot_raster('elevation', cmap='terrain')
 
 
 ![png](examples/notebooks/plot_examples/plot_1.png)
-
-
-
-
-
-    <GeoAxes: >
-
-
 
 
 ```python
@@ -688,25 +674,11 @@ output.plot_raster('slope', cmap='rainbow', vmin=0, vmax=15)
 ![png](examples/notebooks/plot_examples/plot_2.png)
 
 
-
-
-
-    <GeoAxes: >
-
-
-
-
 ```python
 output.plot_raster('c_prof', cmap='inferno', norm='linear')
 ```
 
 
 ![png](examples/notebooks/plot_examples/plot_3.png)
-
-
-
-
-
-    <GeoAxes: >
 
 
