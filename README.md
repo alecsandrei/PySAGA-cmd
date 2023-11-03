@@ -506,7 +506,7 @@ print(output.text)
     Default: 0
     
 
-### Running a SAGA GIS tool
+### Running a SAGA GIS tool and plotting the results
 
 
 ```python
