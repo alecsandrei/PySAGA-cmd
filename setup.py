@@ -1,10 +1,23 @@
+import io
+from os import path as op
 from setuptools import setup, find_packages
+
 
 with open('README.md') as f:
     long_description = f.read()
 
-version = '0.0.4'
+here = op.abspath(op.dirname(__file__))
+
+version = '0.0.5'
 description = 'A package that allows you to run SAGA GIS tools in a Python environment.'
+
+with io.open(op.join(here, "requirements.txt"), encoding="utf-8") as f:
+    core_reqs = f.read().split("\n")
+
+
+extras_requires = {
+        'dev': ['twine >=4.0.2'],
+}
 
 setup(
     name='PySAGA-cmd',
@@ -16,7 +29,8 @@ setup(
     long_description_content_type='text/markdown',
     url='https://github.com/alecsandrei/PySAGA-cmd',
     packages=find_packages(),
-    install_requires=[],
+    install_requires=core_reqs,
+    extras_require=extras_requires,
     keywords=['python', 'gis', 'SAGA GIS', 'saga_cmd', 'PySAGA'],
     classifiers=[
         'License :: OSI Approved :: MIT License',
@@ -26,7 +40,4 @@ setup(
         'Operating System :: Unix',
         'Operating System :: Microsoft :: Windows',
     ],
-    extras_require={
-        'dev': ['twine >=4.0.2'],
-    },
 )

@@ -5,7 +5,8 @@ PySAGA-cmd allows the usage of SAGA GIS tools in a Python environment.
 - [How to download the package](#how-to-download)
 - [How to use the package](#how-to-use-the-package)
   - [Choosing a SAGA GIS tool](#choosing-a-saga-gis-tool)
-  - [Running a SAGA GIS tool](#running-a-saga-gis-tool)
+  - [Using flags](#using-flags)
+  - [Running a SAGA GIS tool and plotting the results](#running-a-saga-gis-tool-and-plotting-the-results)
 
 ## How to download
 
@@ -32,8 +33,8 @@ from PySAGA_cmd import (
 saga_cmd = '/usr/local/bin/saga_cmd'
 
 # Instantiating a SAGA environment
-saga_env = SAGA(command=saga_cmd)
-print(saga_env)
+saga_env = SAGA(saga_cmd=saga_cmd)
+print(saga_env.run_command().text)
 ```
 
     ____________________________
@@ -151,8 +152,8 @@ print(saga_env)
 
 ```python
 # Choosing a library
-saga_library = saga_env.get_library(library='ta_morphometry')
-print(saga_library)
+saga_library = saga_env.get_library(library_name='ta_morphometry')
+print(saga_library.run_command().text)
 ```
 
     ____________________________
@@ -223,10 +224,11 @@ print(saga_library)
 
 ```python
 # Choosing a tool
-saga_tool = saga_library.get_tool(tool='0')
-print(saga_tool)
+saga_tool = saga_library.get_tool(tool_name='12')
+print(saga_tool.run_command().text)
 ```
 
+    Tool(saga_cmd='/usr/local/bin/saga_cmd', command=['/usr/local/bin/saga_cmd', 'ta_morphometry', '12'], _flag=None, saga=SAGA(saga_cmd='/usr/local/bin/saga_cmd', command=['/usr/local/bin/saga_cmd'], _flag=None), library_name='ta_morphometry', tool_name='12')
     ____________________________
     
        #####   ##   #####    ##
@@ -243,76 +245,97 @@ print(saga_tool)
     library path: /usr/local/lib/saga/
     library name: libta_morphometry
     library     : ta_morphometry
-    tool        : Slope, Aspect, Curvature
-    identifier  : 0
-    author      : O.Conrad (c) 2001
+    tool        : Diurnal Anisotropic Heat
+    identifier  : 12
+    author      : J.Boehner, O.Conrad (c) 2008
     processors  : 4 [4]
     ____________________________
     
     
-    Usage: saga_cmd ta_morphometry 0 [-ELEVATION <str>] [-SLOPE <str>] [-ASPECT <str>] [-C_GENE <str>] [-C_PROF <str>] [-C_PLAN <str>] [-C_TANG <str>] [-C_LONG <str>] [-C_CROS <str>] [-C_MINI <str>] [-C_MAXI <str>] [-C_TOTA <str>] [-C_ROTO <str>] [-METHOD <str>] [-UNIT_SLOPE <str>] [-UNIT_ASPECT <str>]
-      -ELEVATION:<str>  	Elevation
+    Usage: saga_cmd ta_morphometry 12 [-DEM <str>] [-DAH <str>] [-ALPHA_MAX <double>]
+      -DEM:<str>         	Elevation
     	grid, input
-      -SLOPE:<str>      	Slope
+      -DAH:<str>         	Diurnal Anisotropic Heating
     	grid, output
-      -ASPECT:<str>     	Aspect
-    	grid, output
-      -C_GENE:<str>     	General Curvature
-    	grid, output, optional
-      -C_PROF:<str>     	Profile Curvature
-    	grid, output, optional
-      -C_PLAN:<str>     	Plan Curvature
-    	grid, output, optional
-      -C_TANG:<str>     	Tangential Curvature
-    	grid, output, optional
-      -C_LONG:<str>     	Longitudinal Curvature
-    	grid, output, optional
-      -C_CROS:<str>     	Cross-Sectional Curvature
-    	grid, output, optional
-      -C_MINI:<str>     	Minimal Curvature
-    	grid, output, optional
-      -C_MAXI:<str>     	Maximal Curvature
-    	grid, output, optional
-      -C_TOTA:<str>     	Total Curvature
-    	grid, output, optional
-      -C_ROTO:<str>     	Flow Line Curvature
-    	grid, output, optional
-      -METHOD:<str>     	Method
-    	choice
-    	Available Choices:
-    	[0] maximum slope (Travis et al. 1975)
-    	[1] maximum triangle slope (Tarboton 1997)
-    	[2] least squares fitted plane (Horn 1981, Costa-Cabral & Burgess 1996)
-    	[3] 6 parameter 2nd order polynom (Evans 1979)
-    	[4] 6 parameter 2nd order polynom (Heerdegen & Beran 1982)
-    	[5] 6 parameter 2nd order polynom (Bauer, Rohdenburg, Bork 1985)
-    	[6] 9 parameter 2nd order polynom (Zevenbergen & Thorne 1987)
-    	[7] 10 parameter 3rd order polynom (Haralick 1983)
-    	[8] 10 parameter 3rd order polynom (Florinsky 2009)
-    	Default: 6
-      -UNIT_SLOPE:<str> 	Unit
-    	choice
-    	Available Choices:
-    	[0] radians
-    	[1] degree
-    	[2] percent rise
-    	Default: 0
-      -UNIT_ASPECT:<str>	Unit
-    	choice
-    	Available Choices:
-    	[0] radians
-    	[1] degree
-    	Default: 0
-    
-    
+      -ALPHA_MAX:<double>	Alpha Max (Degree)
+    	floating point number
+    	Minimum: 0.000000
+    	Maximum: 360.000000
+    	Default: 202.500000
+
+### Using flags
+```python
+from PySAGA_cmd import (
+    SAGA,
+    Library,
+    Tool
+)
+```
+
+
+```python
+# Defining saga_cmd location
+saga_cmd = '/usr/local/bin/saga_cmd'
+
+# Instantiating a SAGA environment
+saga_env = SAGA(saga_cmd=saga_cmd)
+
+# Choosing a library
+saga_library = saga_env.get_library(library_name='ta_morphometry')
+
+# Choosing a tool
+saga_tool = saga_library.get_tool(tool_name='0')
+```
+
+
+```python
+# This attribute stores the command that will be ran
+saga_tool.command
+```
+
+
+
+
+    ['/usr/local/bin/saga_cmd', 'ta_morphometry', '0']
+
 
 
 
 ```python
-# Using a 'help' flag
+# To add a flag, either use the 'set_flag' method or use the setter
+saga_tool.set_flag('help')
+print(saga_tool.command)
 saga_tool.flag = 'help'
-print(saga_tool)
+print(saga_tool.command)
+```
+
+    ['/usr/local/bin/saga_cmd', '--help', 'ta_morphometry', '0']
+    ['/usr/local/bin/saga_cmd', '--help', 'ta_morphometry', '0']
+
+
+
+```python
+# To remove the flag, either set the flag attribute to None or use the 'remove_flag' method
+
+saga_tool.set_flag('help')
 saga_tool.remove_flag()
+print(saga_tool.command)
+
+saga_tool.set_flag('help')
+saga_tool.flag = None
+print(saga_tool.command)
+```
+
+    ['/usr/local/bin/saga_cmd', 'ta_morphometry', '0']
+    ['/usr/local/bin/saga_cmd', 'ta_morphometry', '0']
+
+
+
+```python
+# To run the command, simply use the run_command() method which will return an Output object. The text attribute stores the output text of the command.
+saga_tool.set_flag('help')
+output = saga_tool.run_command()
+print(output.text)
 ```
 
     ____________________________
@@ -481,8 +504,11 @@ saga_tool.remove_flag()
     [0] radians
     [1] degree
     Default: 0
+    
 
 ### Running a SAGA GIS tool
+
+
 ```python
 from PySAGA_cmd import (
     SAGA,
@@ -497,15 +523,16 @@ from PySAGA_cmd import (
 saga_cmd = '/usr/local/bin/saga_cmd'
 
 # Instantiating a SAGA environment
-saga_env = SAGA(command=saga_cmd)
+saga_env = SAGA(saga_cmd=saga_cmd)
 
 # Choosing a library
-saga_library = saga_env.get_library(library='ta_morphometry')
+saga_library = saga_env.get_library(library_name='ta_morphometry')
 
 # Choosing a tool
-saga_tool = saga_library.get_tool(tool='0')
+saga_tool = saga_library.get_tool(tool_name='0')
 
-print(saga_tool)
+# Use this line of code to see which parameters you have to set
+print(saga_tool.run_command().text)
 ```
 
     ____________________________
@@ -590,9 +617,9 @@ print(saga_tool)
 
 
 ```python
-dem_dir = '../data/example_input/DEM_30m.tif'
+dem_dir = '../../data/example_input/DEM_30m.tif'
 
-output_dir = '../data/example_output/'
+output_dir = '../../data/example_output/'
 slope_dir = output_dir + 'SLOPE_30m.tif'
 aspect_dir = output_dir + 'ASPECT_30m.tif'
 c_gene_dir = output_dir + 'C_GENE_30m.tif'
@@ -606,6 +633,7 @@ c_maxi_dir = output_dir + 'C_MAXI_30m.tif'
 c_tota_dir = output_dir + 'C_TOTA_30m.tif'
 c_roto_dir = output_dir + 'C_ROTO_30m.tif'
 
+# Simply pass the arguments to the 'run_command' method
 output = saga_tool.run_command(
     elevation=dem_dir,
     slope=slope_dir,
@@ -624,5 +652,61 @@ output = saga_tool.run_command(
     unit_slope='1',
     unit_aspect='1'
 )
-
 ```
+
+
+```python
+# The 'output' variable is now an output object. To print out the text result just print the text attribute
+print(output.text)
+```
+
+    ____________________________
+
+
+
+```python
+output.plot_raster('elevation', cmap='terrain')
+```
+
+
+![png](examples/notebooks/plot_examples/plot_1.png)
+
+
+
+
+
+    <GeoAxes: >
+
+
+
+
+```python
+output.plot_raster('slope', cmap='rainbow', vmin=0, vmax=15)
+```
+
+
+![png](examples/notebooks/plot_examples/plot_2.png)
+
+
+
+
+
+    <GeoAxes: >
+
+
+
+
+```python
+output.plot_raster('c_prof', cmap='inferno', norm='linear')
+```
+
+
+![png](examples/notebooks/plot_examples/plot_3.png)
+
+
+
+
+
+    <GeoAxes: >
+
+

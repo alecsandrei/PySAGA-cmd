@@ -11,6 +11,7 @@ import tempfile
 # a '0' label. Landslided areas are not provided in the github repo and
 # they have been manually digitized from a LiDAR DEM.
 import geopandas as gpd
+gpd.options.io_engine = 'pyogrio'
 
 from PySAGA_cmd import SAGA
 
@@ -135,8 +136,8 @@ class Geomorphometry:
         training_mask = segments.intersects(training.dissolve().geometry[0])
         testing_mask = segments.intersects(testing.dissolve().geometry[0])
         segments_landslide = ((training_mask + testing_mask) >= 1).astype(int)
-        segments['landslide'] = segments_landslide
-        segments.to_file(labeled_segments_output)
+        segments_landslide.to_file(labeled_segments_output)
+        print('Segments have been labeled.')
         return labeled_segments_output
 
     # First and second derivatives of elevation
