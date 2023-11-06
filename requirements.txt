@@ -3,3 +3,4 @@ numpy
 matplotlib
 cartopy
 rasterio
+geopandas

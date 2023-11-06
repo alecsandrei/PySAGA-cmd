@@ -8,7 +8,7 @@ with open('README.md') as f:
 
 here = op.abspath(op.dirname(__file__))
 
-version = '0.0.6'
+version = '0.0.7'
 description = 'A package that allows you to run SAGA GIS tools in a Python environment.'
 
 with io.open(op.join(here, "requirements.txt"), encoding="utf-8") as f:
@@ -20,7 +20,7 @@ extras_requires = {
 }
 
 setup(
-    name='PySAGA-cmd',
+    name='PySAGA-cmd-comp',
     version=version,
     author='Cuvuliuc Alex-Andrei',
     author_email="<cuvuliucalexandrei@gmail.com>",

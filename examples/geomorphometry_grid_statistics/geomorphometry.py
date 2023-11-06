@@ -4,7 +4,6 @@ import os
 import glob
 import tempfile
 
-# To run some of this script, you will need to download and import Geopandas.
 # Geopandas will be used to add a binary label to the watershed segments,
 # more precisely the segments overlapping a landslided area will receive
 # a '1' label, and those who do not overlap a landslided area will receive
@@ -13,7 +12,7 @@ import tempfile
 import geopandas as gpd
 gpd.options.io_engine = 'pyogrio'
 
-from PySAGA_cmd import SAGA
+from PySAGA_cmd import SAGA, Output
 
 
 class Geomorphometry:
@@ -26,7 +25,7 @@ class Geomorphometry:
     """
 
     def __init__(self, saga_cmd_dir: str, dem_dir: str, output_dir: str):
-        self.saga_env = SAGA(command=saga_cmd_dir)
+        self.saga_env = SAGA(sagacmd = saga_cmd_dir)
         self.dem_dir = dem_dir
         self.output_dir = output_dir
         self.temp_dir = tempfile.mkdtemp()
@@ -118,7 +117,7 @@ class Geomorphometry:
         return self._vrm_watershed_segments
 
     @staticmethod
-    def label_watershed_segments(segments: str) -> str:
+    def label_watershed_segments(segments: str) -> Output:
         """This method will label the segments. It will create
         a boolean 'landslide' field.  
         
@@ -136,12 +135,13 @@ class Geomorphometry:
         training_mask = segments.intersects(training.dissolve().geometry[0])
         testing_mask = segments.intersects(testing.dissolve().geometry[0])
         segments_landslide = ((training_mask + testing_mask) >= 1).astype(int)
-        segments_landslide.to_file(labeled_segments_output)
+        segments['landslide'] = segments_landslide
+        segments.to_file(labeled_segments_output)
         print('Segments have been labeled.')
         return labeled_segments_output
 
     # First and second derivatives of elevation
-    def index_of_convergence(self) -> str:
+    def index_of_convergence(self) -> Output:
         ioc = self.saga_env.get_tool('ta_morphometry', '1')
         output = ioc.run_command(
             elevation=self.dem_dir,
@@ -151,7 +151,7 @@ class Geomorphometry:
         )
         return output
     
-    def terrain_surface_convexity(self) -> str:
+    def terrain_surface_convexity(self) -> Output:
         conv = self.saga_env.get_tool('ta_morphometry', '21')
         output = conv.run_command(
             dem=self.dem_dir,
@@ -167,7 +167,7 @@ class Geomorphometry:
         )
         return output
     
-    def topographic_openness(self) -> str:
+    def topographic_openness(self) -> Output:
         to = self.saga_env.get_tool('ta_lighting', '5')
         output = to.run_command(
             dem=self.dem_dir,
@@ -180,7 +180,7 @@ class Geomorphometry:
         )
         return output
     
-    def slope_aspect_curvature(self) -> str:
+    def slope_aspect_curvature(self) -> Output:
         slope = self.saga_env.get_tool('ta_morphometry', '0')
         output = slope.run_command(
             elevation=self.dem_dir,
@@ -202,7 +202,7 @@ class Geomorphometry:
         )
         return output
     
-    def real_surface_area(self) -> str:
+    def real_surface_area(self) -> Output:
         area = self.saga_env.get_tool('ta_morphometry', '6')
         output = area.run_command(
             dem=self.dem_dir,
@@ -210,7 +210,7 @@ class Geomorphometry:
         )
         return output
 
-    def wind_exposition_index(self) -> str:
+    def wind_exposition_index(self) -> Output:
         exposition = self.saga_env.get_tool('ta_morphometry', '27')
         output = exposition.run_command(
             dem=self.dem_dir,
@@ -223,7 +223,7 @@ class Geomorphometry:
         )
         return output
 
-    def topographic_position_index(self) -> str:
+    def topographic_position_index(self) -> Output:
         tpi = self.saga_env.get_tool('ta_morphometry', '18')
         output = tpi.run_command(
             dem=self.dem_dir,
@@ -238,7 +238,7 @@ class Geomorphometry:
         )
         return output
     
-    def valley_depth(self) -> str:
+    def valley_depth(self) -> Output:
         valley_depth = self.saga_env.get_tool('ta_channels', '7')
         output = valley_depth.run_command(
             elevation=self.dem_dir,
@@ -250,7 +250,7 @@ class Geomorphometry:
         )
         return output
 
-    def morphometric_protection_index(self) -> str:
+    def morphometric_protection_index(self) -> Output:
         mpi = self.saga_env.get_tool('ta_morphometry', '7')
         output = mpi.run_command(
             dem=self.dem_dir,
@@ -259,7 +259,7 @@ class Geomorphometry:
         )
         return output
     
-    def terrain_ruggedness_index(self) -> str:
+    def terrain_ruggedness_index(self) -> Output:
         tri = self.saga_env.get_tool('ta_morphometry', '16')
         output = tri.run_command(
             dem=self.dem_dir,
@@ -271,7 +271,7 @@ class Geomorphometry:
         )
         return output
     
-    def vector_ruggedness_measure(self) -> str:
+    def vector_ruggedness_measure(self) -> Output:
         vrm = self.saga_env.get_tool('ta_morphometry', '17')
         output = vrm.run_command(
             dem=self.dem_dir,
@@ -285,7 +285,7 @@ class Geomorphometry:
         )
         return output
 
-    def terrain_surface_texture(self) -> str:
+    def terrain_surface_texture(self) -> Output:
         texture = self.saga_env.get_tool('ta_morphometry', '20')
         output = texture.run_command(
             dem=self.dem_dir,
@@ -300,7 +300,7 @@ class Geomorphometry:
         )
         return output
     
-    def upslope_downslope_curvature(self) -> str:
+    def upslope_downslope_curvature(self) -> Output:
         upslope_downslope_curvature = self.saga_env.get_tool('ta_morphometry', '26')
         output = upslope_downslope_curvature.run_command(
             dem=self.dem_dir,
@@ -313,7 +313,7 @@ class Geomorphometry:
         )
         return output
         
-    def flow_accumulation_parallelizable(self) -> str:
+    def flow_accumulation_parallelizable(self) -> Output:
         flow_accumulation = self.saga_env.get_tool('ta_hydrology', '29')
         output = flow_accumulation.run_command(
             dem=self.hydro_dem_preprocessed,
@@ -324,7 +324,7 @@ class Geomorphometry:
         )
         return output
 
-    def flow_path_length(self) -> str:
+    def flow_path_length(self) -> Output:
         flow_path_length = self.saga_env.get_tool('ta_hydrology', '6')
         output = flow_path_length.run_command(
             elevation=self.hydro_dem_preprocessed,
@@ -335,7 +335,7 @@ class Geomorphometry:
         )
         return output
 
-    def slope_length(self) -> str:
+    def slope_length(self) -> Output:
         slope_length = self.saga_env.get_tool('ta_hydrology', '7')
         output = slope_length.run_command(
             dem=self.dem_dir,
@@ -343,7 +343,7 @@ class Geomorphometry:
         )
         return output
     
-    def cell_balance(self) -> str:
+    def cell_balance(self) -> Output:
         cell_balance = self.saga_env.get_tool('ta_hydrology', '10')
         output = cell_balance.run_command(
             dem=self.dem_dir,
@@ -354,7 +354,7 @@ class Geomorphometry:
         )
         return output
     
-    def saga_wetness_index(self) -> str:
+    def saga_wetness_index(self) -> Output:
         twi = self.saga_env.get_tool('ta_hydrology', '15')
         output = twi.run_command(
             dem=self.dem_dir,
@@ -379,7 +379,7 @@ class Geomorphometry:
             self.tools[name]()
             print(f'{name} execution finished.')
 
-    def grid_statistics_for_polygons(self) -> str:
+    def grid_statistics_for_polygons(self) -> Output:
         # Use glob to find all files with a .tif extension
         grids = glob.glob(os.path.join(output_dir, '*.tif'))
         # Convert file names to full paths
@@ -409,8 +409,8 @@ class Geomorphometry:
 
 
 if __name__ == "__main__":
-    dem_dir = r'/media/alex/SSD_ALEX/scripts/geomorphology/test_areas/jijioara/grids/jijioara.tif' # here you input your dem location
+    dem_dir = r'/media/alex/SSD_ALEX/scripts/geomorphology/test_areas/jijioara/grids/DEM.tif' # here you input your dem location
     output_dir = r'/media/alex/SSD_ALEX/scripts/geomorphology/test_areas/jijioara/grids/output/' # here you put your output location, make sure to create a shapes subfolder inside it!
-    geo = Geomorphometry('saga_cmd', dem_dir, output_dir)
+    geo = Geomorphometry('/usr/local/bin/saga_cmd', dem_dir, output_dir)
     geo.execute_tools()
     geo.grid_statistics_for_polygons()
