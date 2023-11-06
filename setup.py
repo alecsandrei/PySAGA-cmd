@@ -20,7 +20,7 @@ extras_requires = {
 }
 
 setup(
-    name='PySAGA-cmd-comp',
+    name='PySAGA-cmd',
     version=version,
     author='Cuvuliuc Alex-Andrei',
     author_email="<cuvuliucalexandrei@gmail.com>",
