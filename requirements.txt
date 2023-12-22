@@ -4,3 +4,4 @@ matplotlib
 cartopy
 rasterio
 geopandas
+pyogrio
