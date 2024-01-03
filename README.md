@@ -1,5 +1,5 @@
 # PySAGA-cmd
-PySAGA-cmd allows a lightweight way of running SAGA GIS tools using Python.
+PySAGA-cmd is a simple way of running SAGA GIS tools using Python.
 
 ## How to download
 
