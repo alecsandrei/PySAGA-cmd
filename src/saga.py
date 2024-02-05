@@ -7,12 +7,12 @@ from typing import Type, Union
 from attrs import define, field
 from abc import ABC, abstractmethod
 
-from PySAGA_cmd._util import (
+from src._util import (
     check_is_file,
     check_is_executable,
     get_sagacmd_default
 )
-from PySAGA_cmd._plot import (
+from src._plot import (
     Raster,
     Vector
 )
