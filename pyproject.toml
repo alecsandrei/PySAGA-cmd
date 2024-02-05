@@ -30,12 +30,13 @@ all = [
 ]
 dev = [
     "twine",
-    "bumpversion",
+    "zest.releaser",
     "mypy",
     "flake8",
 ]
 
 [tool]
+
 [tool.setuptools.packages.find]
 include = ["PySAGA-cmd*"]
 
@@ -45,15 +46,8 @@ dependencies = {file = ["requirements.txt"]}
 [tool.distutils.bdist_wheel]
 universal = true
 
-[tool.bumpversion]
-current_version = "0.0.7"
-commit = false
-tag = false
-
-[[tool.bumpversion.files]]
-filename = "pyproject.toml"
-search = 'version = "{current_version}"'
-replace = 'version = "{new_version}"'
+[tool.zest-releaser]
+python-file-with-version = "src/__init__.py"
 
 [tool.flake8]
 max-line-length = 80
