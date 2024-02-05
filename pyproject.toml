@@ -47,8 +47,8 @@ universal = true
 
 [tool.bumpversion]
 current_version = "0.0.7"
-commit = true
-tag = true
+commit = false
+tag = false
 
 [[tool.bumpversion.files]]
 filename = "pyproject.toml"
@@ -64,3 +64,5 @@ Homepage = "https://github.com/alecsandrei/PySAGA-cmd"
 [build-system]
 requires = ["setuptools>=64", "setuptools_scm>=8"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools_scm]
