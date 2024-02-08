@@ -7,12 +7,12 @@ from typing import Type, Union
 from attrs import define, field
 from abc import ABC, abstractmethod
 
-from src._util import (
+from src.utils import (
     check_is_file,
     check_is_executable,
     get_sagacmd_default
 )
-from src._plot import (
+from src.plot import (
     Raster,
     Vector
 )

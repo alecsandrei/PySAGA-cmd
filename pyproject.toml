@@ -33,6 +33,8 @@ dev = [
     "zest.releaser",
     "mypy",
     "flake8",
+    "Flake8-pyproject",
+    "pytest"
 ]
 
 [tool]
