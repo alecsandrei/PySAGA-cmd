@@ -7,7 +7,8 @@ from typing import (
     Union,
     Optional,
     Protocol,
-    Mapping
+    Sequence,
+    TYPE_CHECKING
 )
 from pathlib import Path
 import subprocess
@@ -25,13 +26,15 @@ from src.utils import (
     check_is_executable,
     get_sagacmd_default,
 )
-from src.plot import (
-    Raster,
-    Vector
-)
 
 
-SAGACMDPath = Union[str, os.PathLike]
+if TYPE_CHECKING:
+    from objects import (
+        Raster,
+        Vector
+    )
+
+PathLike = Union[str, os.PathLike]
 
 
 @dataclass
@@ -56,9 +59,9 @@ class SAGACMD:
     OSError: If 'saga_cmd_path' can not be executed.
     """
 
-    saga_cmd_path: SAGACMDPath
+    saga_cmd_path: PathLike
 
-    def __init__(self, saga_cmd_path: Optional[SAGACMDPath] = None) -> None:
+    def __init__(self, saga_cmd_path: Optional[PathLike] = None) -> None:
         if saga_cmd_path is None:
             saga_cmd_path = get_sagacmd_default()
         elif not isinstance(saga_cmd_path, Path):
@@ -102,17 +105,16 @@ class Flag:
 
 
 @dataclass
-class Parameters:
+class Parameters(dict):
     """The SAGA GIS tool parameters.
+
+    This object inherits from UserDict and therefore cand be
+    used as a dictionary.
 
     Parameters
     ----------
     **kwargs: The tool parameters as keyword arguments. For example,
       'elevation=/path/to/raster' could be a keyword argument.
-
-    Attributes
-    ----------
-    params: The parameters of the tool, formatted.
 
     Examples
     ---------
@@ -123,25 +125,18 @@ class Parameters:
     -ELEVATION='path/to/elevation' -GRID='path/to/grid' -METHOD='0'
     """
 
-    params: list[str]
+    _params: list[str]
 
-    def __init__(self, **kwargs: Mapping[str, SupportsStr]) -> None:
-        self.params = []
-        param = '-{K}={v}'
-        if kwargs:
-            for k, v in kwargs.items():
-                self.params.append(
-                    param.format(K=k.upper(), v=str(v))
-                )
+    def __init__(self, **kwargs: SupportsStr) -> None:
+        super().__init__({k: str(v) for k, v in kwargs.items()})
+        self._params = ['-{K}={v}'.format(K=k.upper(), v=v)
+                        for k, v in self.items()]
 
     def __iter__(self):
-        return (param for param in self.params)
-
-    def __getitem__(self, idx: int):
-        return self.params[idx]
+        return (param for param in self._params)
 
     def __str__(self):
-        return ' '.join(self.params)
+        return ' '.join(self._params)
 
 
 @dataclass
@@ -205,7 +200,7 @@ class SAGA(Executable):
 
     def __init__(
         self,
-        saga_cmd: Optional[Union[SAGACMDPath, SAGACMD]] = None,
+        saga_cmd: Optional[Union[PathLike, SAGACMD]] = None,
         flag: Optional[Union[str, Flag]] = None
     ) -> None:
         if not isinstance(saga_cmd, SAGACMD):
@@ -314,7 +309,7 @@ class Library(Executable):
     def __init__(
         self,
         library: str,
-        saga_cmd: Optional[Union[SAGACMDPath, SAGACMD]] = None,
+        saga_cmd: Optional[Union[PathLike, SAGACMD]] = None,
         flag: Optional[Union[str, Flag]] = None
     ) -> None:
         if not isinstance(saga_cmd, SAGACMD):
@@ -416,7 +411,7 @@ class Tool(Executable):
         self,
         library: Library,
         tool: str,
-        saga_cmd: Optional[Union[SAGACMDPath, SAGACMD]] = None,
+        saga_cmd: Optional[Union[PathLike, SAGACMD]] = None,
         flag: Optional[Union[str, Flag]] = None
     ) -> None:
         if not isinstance(saga_cmd, SAGACMD):
@@ -454,7 +449,7 @@ class Tool(Executable):
     def flag(self) -> None:
         self._flag = Flag()
 
-    def run_command(self, **kwargs) -> Output:
+    def run_command(self, **kwargs: SupportsStr) -> Output:
         if kwargs:
             self.parameters = Parameters(**kwargs)
         completed_process = self.command.execute()
@@ -506,8 +501,9 @@ class Output:
 
     Parameters
     ----------
-    completed_process: A 'CompletedProcess' object that was returned by the 'subprocess.run' function.
-    parameters: An optional 'Parameters' object.
+    completed_process: A 'CompletedProcess' object that was returned by
+      a command execution.
+    parameters: The 'Parameters' object passed to the 'Command' object.
 
     Attributes
     ----------
@@ -515,42 +511,45 @@ class Output:
 
     Methods
     ----------
-    get_raster: Takes as input a parameter passed to the 'Tool.run_command' method (e.g. 'dem' or 'elevation'). Check
-        the 'parameters' attribute of this class to see available parameters.
-        Returns a list of 'Raster' objects or a 'Raster' object.
-    get_vector: Takes as input a parameter passed to the 'Tool.run_command' method (e.g. 'dem' or 'elevation'). Check
-        the 'parameters' attribute of this class to see available parameters.
-        Returns a list of 'Vector' objects or a 'Vector' object.
+    get_raster: Takes as input a parameter. Check the 'parameters' attribute
+      of this class to see available parameters. Returns a 'Raster' object
+      or a list of them.
+    get_vector: Takes as input a parameter. Check the 'parameters' attribute
+      of this class to see available parameters. Returns a 'Vector' object
+      or a list of them.
     """
 
     completed_process: subprocess.CompletedProcess
-    parameters: Parameters = field(default=None)
+    parameters: Parameters = field(default_factory=Parameters)
     text: str = field(init=False)
 
-    def __attrs_post_init__(self) -> None:
+    def __post_init__(self) -> None:
         self.text = self.completed_process.stdout
 
-    def get_raster(self, parameters: Union[list[str], str]) -> Union[list[Raster], Raster]:
-        if isinstance(parameters, list):
-            return [Raster(self.parameters.kwargs[parameter])
-                    for parameter in parameters]
-        return Raster(self.parameters.kwargs[parameters])
-    def get_vector(self, parameters: Union[list[str], str]) -> Union[list[Vector], Vector]:
-        if isinstance(parameters, list):
-            return [Vector(self.parameters.kwargs[parameter])
-                    for parameter in parameters]
-        return Vector(self.parameters.kwargs[parameters])
+    def get_raster(
+        self,
+        parameters: Union[Sequence[str], str]
+    ) -> list[Raster]:
 
+        from objects import Raster
 
-if __name__ == '__main__':
-    dem = './data/example_input/DEM_30m.tif'
-    shade = './data/example_output/shade.tif'
-    saga_env = SAGA(sagacmd='/usr/local/bin/saga_cmd')
-    saga_lib = saga_env.get_library(library='ta_lighting')
-    saga_tool = saga_lib.get_tool(tool='0')
-    output = saga_tool.run_command(elevation=dem,
-                                   shade=shade,
-                                   method='2')
-    print(output.text)
-    output.get_raster(['shade', 'elevation'])[0].plot()
-    # use plt.show to visualize
+        if isinstance(parameters, str):
+            parameters = [parameters]
+        return (
+            [Raster(v) for k, v in self.parameters.items()
+                if k in parameters]
+        )
+
+    def get_vector(
+        self,
+        parameters: Union[Sequence[str], str]
+    ) -> list[Vector]:
+
+        from objects import Vector
+
+        if isinstance(parameters, str):
+            parameters = [parameters]
+        return (
+            [Vector(v) for k, v in self.parameters.items()
+                if k in parameters]
+        )

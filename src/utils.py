@@ -33,7 +33,7 @@ def check_is_executable(path: Path) -> None:
     """
     message = f'The file at path {path} is not an executable.'
     try:
-        subprocess.run(path, check=False)
+        _ = subprocess.run(path, check=False, capture_output=True)
     except subprocess.SubprocessError as e:
         raise NotExecutableError(message) from e
     except OSError as e:
@@ -48,12 +48,30 @@ def get_sagacmd_default() -> Path:
     is raised.
     """
     if sys.platform.startswith('linux'):
-        return Path('/usr/local/bin/saga_cmd')
+        return Path('/usr/bin/saga_cmd')
     if sys.platform.startswith('win'):
         return Path(r'C:\Program Files\SAGA\saga_cmd.exe')
     raise OSError(
         'SAGA GIS is not available for your OS.'
     )
+
+
+def import_extras():  # noqa:F401
+    try:
+        import numpy as np  # noqa:F401
+        import rasterio as rio  # noqa:F401
+        import cartopy.crs as ccrs  # noqa:F401
+        import matplotlib.axes as axes  # noqa:F401
+        import matplotlib.pyplot as plt  # noqa:F401
+        import geopandas as gpd
+
+        gpd.options.io_engine = "pyogrio"
+    except ModuleNotFoundError as e:
+        raise ModuleNotFoundError(
+            f'There was an error importing {e.name} as it is ' +
+            'not installed. To install it, run ' +
+            '"pip install PySAGA-cmd[extras]".'
+        )
 
 
 class NotExecutableError(Exception):

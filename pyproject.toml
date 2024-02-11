@@ -26,7 +26,15 @@ classifiers = [
 
 [project.optional-dependencies]
 all = [
-    "PySAGA-cmd[dev]",
+    "PySAGA-cmd[extras,dev]",
+]
+extras = [
+    "numpy",
+    "matplotlib",
+    "cartopy",
+    "rasterio",
+    "geopandas",
+    "pyogrio"
 ]
 dev = [
     "twine",
@@ -37,10 +45,22 @@ dev = [
     "pytest"
 ]
 
+[project.urls]
+Homepage = "https://github.com/alecsandrei/PySAGA-cmd"
+
+[build-system]
+requires = ["setuptools>=64", "setuptools_scm>=8"]
+build-backend = "setuptools.build_meta"
+
 [tool]
 
+[tool.setuptools_scm]
+
 [tool.setuptools.packages.find]
+where = ["src"]
 include = ["PySAGA-cmd*"]
+exclude = ["PySAGA-cmd.tests*"]
+namespaces = false
 
 [tool.setuptools.dynamic]
 dependencies = {file = ["requirements.txt"]}
@@ -53,12 +73,3 @@ python-file-with-version = "src/__init__.py"
 
 [tool.flake8]
 max-line-length = 80
-
-[project.urls]
-Homepage = "https://github.com/alecsandrei/PySAGA-cmd"
-
-[build-system]
-requires = ["setuptools>=64", "setuptools_scm>=8"]
-build-backend = "setuptools.build_meta"
-
-[tool.setuptools_scm]

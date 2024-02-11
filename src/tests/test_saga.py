@@ -131,5 +131,5 @@ class TestParameters:
             elevation=elevation,
             slope=slope
         )
-        assert params[0] == ''.join(['-ELEVATION=', str(elevation)])
-        assert params[1] == ''.join(['-SLOPE=', str(slope)])
+        assert params['elevation'] == str(elevation)
+        assert params['slope'] == str(slope)

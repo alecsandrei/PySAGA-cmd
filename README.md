@@ -14,8 +14,8 @@ For information on how to use the package, I recommend looking at the [notebooks
 
 # TODO before the launch of v1.0.7.
 
-- [ ] Remove all dependencies. All the dependencies will be turned into extra dependencies. Switch from attrs to dataclasses.
-- [ ] Write simple tests.
+- [x] Remove all dependencies. All the dependencies will be turned into extra dependencies. Switch from attrs to dataclasses.
+- [x] Write simple tests.
 - [ ] Add an extra feature: **build your own tools**.
 - [ ] Use a tool like zest.releaser to release v1.0.7.
-- [ ] Make objects more pythonic.
+- [x] Make objects more pythonic (add truediv to access tools faster for example instead of less nicer getter methods).
