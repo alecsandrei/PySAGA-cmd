@@ -18,3 +18,4 @@ For information on how to use the package, I recommend looking at the [notebooks
 - [ ] Write simple tests.
 - [ ] Add an extra feature: **build your own tools**.
 - [ ] Use a tool like zest.releaser to release v1.0.7.
+- [ ] Make objects more pythonic.
