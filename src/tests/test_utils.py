@@ -35,9 +35,9 @@ def test_check_is_executable(tmp_path: Path):
         tmp_file = tmp_path / ''.join([text, '.bat'])
         tmp_file.write_text(data='@echo off')
         assert check_is_executable(path=tmp_file) is None
-    # elif sys.platform.startswith('linux'):
-    #     text = test_check_is_executable.__name__
-    #     tmp_file = tmp_path / ''.join([text, '.sh'])
-    #     tmp_file.write_text(data='echo "Hello, World!"')
-    #     tmp_file.chmod(0o755)
-    #     assert check_is_executable(path=tmp_file) is None
+    elif sys.platform.startswith('linux'):
+        text = test_check_is_executable.__name__
+        tmp_file = tmp_path / ''.join([text, '.sh'])
+        tmp_file.write_text(data='echo "Hello, World!"')
+        tmp_file.chmod(0o755)
+        assert check_is_executable(path=tmp_file) is None
