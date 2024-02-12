@@ -8,7 +8,7 @@ from typing import (
     Optional,
     Protocol,
     Sequence,
-    TYPE_CHECKING
+    TYPE_CHECKING,
 )
 from pathlib import Path
 import subprocess
@@ -427,6 +427,9 @@ class Tool(Executable):
     def __str__(self):
         return self.tool
 
+    def __call__(self, **kwargs: SupportsStr) -> Output:
+        return self.run_command(**kwargs)
+
     @property
     def command(self) -> Command:
         return (
@@ -449,9 +452,12 @@ class Tool(Executable):
     def flag(self) -> None:
         self._flag = Flag()
 
+    def set_params(self, **kwargs: SupportsStr):
+        self.parameters = Parameters(**kwargs)
+
     def run_command(self, **kwargs: SupportsStr) -> Output:
         if kwargs:
-            self.parameters = Parameters(**kwargs)
+            self.set_params(**kwargs)
         completed_process = self.command.execute()
         return Output(completed_process, self.parameters)
 

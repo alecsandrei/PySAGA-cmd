@@ -16,6 +16,6 @@ For information on how to use the package, I recommend looking at the [notebooks
 
 - [x] Remove all dependencies. All the dependencies will be turned into extra dependencies. Switch from attrs to dataclasses.
 - [x] Write simple tests.
-- [ ] Add an extra feature: **build your own tools**.
+- [ ] Add pipes.
 - [ ] Use a tool like zest.releaser to release v1.0.7.
-- [x] Make objects more pythonic (add truediv to access tools faster for example instead of less nicer getter methods).
+- [x] Make objects more pythonic.
