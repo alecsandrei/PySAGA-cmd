@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import os
+import time
+import tempfile
 from typing import (
     Union,
     Optional,
@@ -20,6 +22,7 @@ from dataclasses import (
     dataclass,
     field
 )
+from functools import cache
 
 from src.utils import (
     check_is_file,
@@ -35,6 +38,11 @@ if TYPE_CHECKING:
     )
 
 PathLike = Union[str, os.PathLike]
+
+
+@cache
+def temp_dir():
+    return Path(tempfile.mkdtemp())
 
 
 @dataclass
@@ -65,7 +73,7 @@ class SAGACMD:
         if saga_cmd_path is None:
             saga_cmd_path = get_sagacmd_default()
         elif not isinstance(saga_cmd_path, Path):
-            saga_cmd_path = Path(saga_cmd_path)
+            saga_cmd_path = Path(os.fspath(saga_cmd_path))
         self.saga_cmd_path = saga_cmd_path
         check_is_file(self.saga_cmd_path)
         check_is_executable(self.saga_cmd_path)
@@ -128,9 +136,20 @@ class Parameters(dict):
     _params: list[str]
 
     def __init__(self, **kwargs: SupportsStr) -> None:
-        super().__init__({k: str(v) for k, v in kwargs.items()})
-        self._params = ['-{K}={v}'.format(K=k.upper(), v=v)
-                        for k, v in self.items()]
+        super().__init__()
+        self._params = []
+        pattern = '-{PARAM}={value}'
+        for param, value in kwargs.items():
+            value = str(value)
+            val_as_path = Path(value)
+            if val_as_path.stem == 'temp' and (suffix := val_as_path.suffix):
+                value = (
+                    temp_dir() / f'{value}_{time.time()}.{suffix}'
+                    ).as_posix()
+            self[param] = value
+            self._params.append(
+                pattern.format(PARAM=param.upper(), value=value)
+            )
 
     def __iter__(self):
         return (param for param in self._params)
@@ -214,6 +233,9 @@ class SAGA(Executable):
         if isinstance(library, str):
             return self.get_library(library=library)
         return library
+
+    def temp_dir(self) -> Path:
+        return temp_dir()
 
     @property
     def command(self) -> Command:
