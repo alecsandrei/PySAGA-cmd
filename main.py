@@ -20,11 +20,9 @@ if __name__ == '__main__':
     # Piping
     pipe = (
         route_detection(elevation=dem, sinkroute='temp') |
-        sink_removal(dem='_elevation',
-                     sinkroute='_sinkroute',
+        sink_removal(dem='_elevation', sinkroute='_sinkroute',
                      dem_preproc='temp') |
-        flow_accumulation(dem='_dem_preproc',
-                          flow=output)
+        flow_accumulation(dem='_dem_preproc', flow=output)
     )
     outputs = pipe.execute(verbose=True)
 
