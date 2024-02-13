@@ -4,12 +4,14 @@ from __future__ import annotations
 
 import os
 import time
+import shutil
 import tempfile
 from typing import (
     Union,
     Optional,
     Protocol,
     Sequence,
+    Self,
     TYPE_CHECKING,
 )
 from pathlib import Path
@@ -28,6 +30,7 @@ from src.utils import (
     check_is_file,
     check_is_executable,
     get_sagacmd_default,
+    infer_file_extension,
 )
 
 
@@ -113,7 +116,7 @@ class Flag:
 
 
 @dataclass
-class Parameters(dict):
+class Parameters(dict[str, str]):
     """The SAGA GIS tool parameters.
 
     This object inherits from UserDict and therefore cand be
@@ -133,29 +136,34 @@ class Parameters(dict):
     -ELEVATION='path/to/elevation' -GRID='path/to/grid' -METHOD='0'
     """
 
-    _params: list[str]
-
     def __init__(self, **kwargs: SupportsStr) -> None:
         super().__init__()
-        self._params = []
-        pattern = '-{PARAM}={value}'
         for param, value in kwargs.items():
             value = str(value)
             val_as_path = Path(value)
-            if val_as_path.stem == 'temp' and (suffix := val_as_path.suffix):
-                value = (
-                    temp_dir() / f'{value}_{time.time()}.{suffix}'
-                    ).as_posix()
+            if val_as_path.stem == 'temp':
+                suffix = val_as_path.suffix
+                unix = str(time.time()).split('.')[0]
+                value = (temp_dir() / f'{param}_{unix}{suffix}').as_posix()
             self[param] = value
-            self._params.append(
-                pattern.format(PARAM=param.upper(), value=value)
-            )
 
     def __iter__(self):
-        return (param for param in self._params)
+        return (param for param in format_parameters(self))
 
     def __str__(self):
-        return ' '.join(self._params)
+        return ' '.join(format_parameters(self))
+
+    def __repr__(self):
+        return super().__repr__()
+
+
+def format_parameters(parameters: Parameters) -> list[str]:
+    """Used to format the parameters as required by SAGAGIS."""
+    params = []
+    param_format = '-{PARAM}={value}'
+    for param, value in parameters.items():
+        params.append(param_format.format(PARAM=param.upper(), value=value))
+    return params
 
 
 @dataclass
@@ -194,7 +202,7 @@ class SAGA(Executable):
 
     Parameters
     ----------
-    saga_cmd_path: The file path to the 'saga_cmd' file. For information
+    saga_cmd: The file path to the 'saga_cmd' file. For information
       on where to find it, check the following link:
       https://sourceforge.net/projects/saga-gis/files/SAGA%20-%20Documentation/Tutorials/Command_Line_Scripting/.
     flag: The flag to use when running the command. For more details, check
@@ -234,8 +242,16 @@ class SAGA(Executable):
             return self.get_library(library=library)
         return library
 
+    @property
     def temp_dir(self) -> Path:
         return temp_dir()
+
+    @property
+    def temp_files(self):
+        return list(temp_dir().iterdir())
+
+    def temp_dir_cleanup(self):
+        shutil.rmtree(self.temp_dir)
 
     @property
     def command(self) -> Command:
@@ -304,7 +320,7 @@ class Library(Executable):
     Parameters
     ----------
     library: the SAGA GIS library name.
-    saga_cmd_path: The file path to the 'saga_cmd' file. For information
+    saga_cmd: The file path to the 'saga_cmd' file. For information
       on where to find it, check the following link:
       https://sourceforge.net/projects/saga-gis/files/SAGA%20-%20Documentation/Tutorials/Command_Line_Scripting/.
     flag: The flag to use when running the command. For more details, check
@@ -396,13 +412,13 @@ class Library(Executable):
 
 @dataclass
 class Tool(Executable):
-    """Describes a SAGA GIS tool.
+    """Describes a SAGA GIS tool.f
 
     Parameters
     ----------
     library: The SAGA GIS library object.
     tool: The tool name.
-    saga_cmd_path: The file path to the 'saga_cmd' file. For information
+    saga_cmd: The file path to the 'saga_cmd' file. For information
       on where to find it, check the following link:
       https://sourceforge.net/projects/saga-gis/files/SAGA%20-%20Documentation/Tutorials/Command_Line_Scripting/.
     flag: The flag to use when running the command. For more details, check
@@ -449,8 +465,10 @@ class Tool(Executable):
     def __str__(self):
         return self.tool
 
-    def __call__(self, **kwargs: SupportsStr) -> Output:
-        return self.run_command(**kwargs)
+    def __call__(self, **kwargs: SupportsStr) -> Self:
+        self.parameters = Parameters(**kwargs)
+        # print(self.parameters)
+        return self
 
     @property
     def command(self) -> Command:
@@ -474,14 +492,84 @@ class Tool(Executable):
     def flag(self) -> None:
         self._flag = Flag()
 
-    def set_params(self, **kwargs: SupportsStr):
-        self.parameters = Parameters(**kwargs)
+    def __or__(self, tool: Tool) -> Pipeline:
+        return Pipeline(self) | (tool)
 
     def run_command(self, **kwargs: SupportsStr) -> Output:
         if kwargs:
-            self.set_params(**kwargs)
+            self(**kwargs)
+        for param, value in self.parameters.items():
+            value_as_path = Path(value)
+            if value_as_path.parent.exists() and not value_as_path.suffix:
+                value = ''.join(
+                    [value, infer_file_extension(value_as_path)]
+                )
+                self.parameters[param] = value
         completed_process = self.command.execute()
         return Output(completed_process, self.parameters)
+
+
+@dataclass
+class Pipeline:
+    tools: list[Tool]
+
+    def __init__(
+        self,
+        tool: Tool
+    ):
+        self.tools = [tool]
+
+    def __or__(self, tool: Tool) -> Self:
+        self.tools.append(tool)
+        self.fill_values()
+        return self
+
+    def fill_values(self):
+        """Replaces all the values that start with underscore."""
+        prev_tool = self.tools[-2]
+        tool = self.tools[-1]
+        for param, value in tool.parameters.items():
+            if not value.startswith('_'):
+                continue
+            try:
+                value = prev_tool.parameters[value[1:]]
+                tool.parameters[param] = value
+            except KeyError as e:
+                raise PipelineError(
+                    f'Parameter {value} not found in the previous tool.'
+                ) from e
+
+    def execute(self, verbose=False) -> list[Output]:
+        """Executes the tools in the pipeline.
+
+        Args:
+            verbose: Wether or not to print the output text after
+              the execution of each tool.
+        """
+        outputs = []
+        for tool in self.tools:
+            output = tool.run_command()
+            if verbose:
+                lines = output.text.split('\n')
+                cleaned_lines = [line for line in lines
+                                 if '%' not in line and line]
+                print('\n'.join(cleaned_lines))
+            outputs.append(output)
+        return outputs
+
+    def __str__(self):
+        string = []
+        for tool in self.tools:
+            string.extend([tool.library, ' ', tool, '\n'])
+            string.extend(['    ', tool.parameters, '\n'])
+            string.extend(['-'*10, '\n'])
+        return ''.join(str(element) for element in string[:-3])
+
+
+class PipelineError(Exception):
+    def __init__(self, message: str):
+        self.message = message
+        super().__init__(self.message)
 
 
 class SupportsStr(Protocol):
@@ -552,7 +640,7 @@ class Output:
     text: str = field(init=False)
 
     def __post_init__(self) -> None:
-        self.text = self.completed_process.stdout
+        self.text = str(self.completed_process.stdout)
 
     def get_raster(
         self,
@@ -565,7 +653,7 @@ class Output:
             parameters = [parameters]
         return (
             [Raster(v) for k, v in self.parameters.items()
-                if k in parameters]
+             if k in parameters]
         )
 
     def get_vector(
@@ -579,5 +667,5 @@ class Output:
             parameters = [parameters]
         return (
             [Vector(v) for k, v in self.parameters.items()
-                if k in parameters]
+             if k in parameters]
         )

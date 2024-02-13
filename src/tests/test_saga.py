@@ -133,3 +133,36 @@ class TestParameters:
         )
         assert params['elevation'] == str(elevation)
         assert params['slope'] == str(slope)
+
+    def test_parameters_temp(self, tmp_path: Path):
+        elevation = tmp_path / 'elevation.tif'
+        slope = tmp_path / 'temp.tif'
+        params = Parameters(
+            elevation=elevation,
+            slope=slope
+        )
+        assert params['slope'] != 'temp.tif'
+
+
+class TestPipeline:
+
+    @pytest.fixture(autouse=True)
+    def setup(self, tmp_path):
+        self.dummy_executable = dummy_executable(tmp_path)
+
+    def test_pipeline(self):
+        saga = SAGA(saga_cmd=self.dummy_executable)
+        preprocessor = saga / 'ta_preprocessor'
+        sink_drainage_route_detection = preprocessor / '1'
+        sink_removal = preprocessor / '2'
+        flow_accumulation_parallelizable = saga / 'ta_hydrology' / '29'
+        dem = 'temp'
+        sinkroute = 'temp'
+        dem_preproc = 'temp'
+        flow_accumulation = 'temp'
+        pipe = (
+            sink_drainage_route_detection(elevation=dem, sinkroute=sinkroute) |
+            (sink_removal(dem='_elevation', sinkroute='_sinkroute', dem_preproc=dem_preproc)) |
+            (flow_accumulation_parallelizable(dem='_dem_preproc', flow_accumulation=flow_accumulation))
+        )
+        assert pipe

@@ -56,21 +56,32 @@ def get_sagacmd_default() -> Path:
     )
 
 
-def import_extras():  # noqa:F401
-    try:
-        import numpy as np  # noqa:F401
-        import rasterio as rio  # noqa:F401
-        import cartopy.crs as ccrs  # noqa:F401
-        import matplotlib.axes as axes  # noqa:F401
-        import matplotlib.pyplot as plt  # noqa:F401
-        import geopandas as gpd
+def infer_file_extension(path_to_file: Path) -> str:
+    """Attemps to infer the SAGA GIS extension of a file.
 
-        gpd.options.io_engine = "pyogrio"
-    except ModuleNotFoundError as e:
-        raise ModuleNotFoundError(
-            f'There was an error importing {e.name} as it is ' +
-            'not installed. To install it, run ' +
-            '"pip install PySAGA-cmd[extras]".'
+    First it checks if there is a file with .shp extension
+    that has the same name. It does the same for .sdat. If
+    it doesn't find any file that meets this criteria, it
+    chooses the file with the biggest size that has the same
+    name.
+
+    Args:
+        path_to_file: Points to a file without a suffix.
+    """
+    files_in_dir = path_to_file.parent.iterdir()
+    files_filtered = [file for file in files_in_dir
+                      if file.stem == path_to_file.stem]
+    has_shp = any(file.suffix == '.shp' for file in files_filtered)
+    has_sdat = any(file.suffix == '.sdat' for file in files_filtered)
+    if not files_filtered:
+        return ''
+    if has_shp and not has_sdat:
+        return '.shp'
+    elif not has_shp and has_sdat:
+        return '.sdat'
+    else:
+        return (
+            sorted(files_filtered, key=sys.getsizeof)[-1].suffix
         )
 
 
