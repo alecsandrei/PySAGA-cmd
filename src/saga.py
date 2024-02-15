@@ -143,9 +143,6 @@ class Parameters(dict[str, str]):
             value = str(value)
             self[param] = str(value)
 
-    def __iter__(self):
-        return (param for param in format_parameters(self))
-
     def __str__(self):
         return ' '.join(format_parameters(self))
 
@@ -160,6 +157,9 @@ class Parameters(dict[str, str]):
 
     def __setattr__(self, name, value):
         self[name] = value
+
+    def _params_formatted(self):
+        return (param for param in format_parameters(self))
 
 
 def format_parameters(parameters: Parameters) -> list[str]:
@@ -256,7 +256,12 @@ class SAGA(Executable):
         return list(temp_dir().iterdir())
 
     def temp_dir_cleanup(self):
+        files = [*self.temp_dir.iterdir()]
         shutil.rmtree(self.temp_dir)
+        print('The following files were removed:')
+        for file in files:
+            assert not file.exists()
+            print(file)
 
     @property
     def command(self) -> Command:
@@ -503,7 +508,7 @@ class Tool(Executable):
                     self.flag,
                     self.library,
                     self.tool,
-                    *self.parameters)
+                    *self.parameters._params_formatted())
         )
 
     @property
@@ -613,7 +618,7 @@ class Command:
         return self.args[idx]
 
     def __str__(self):
-        return ' '.join(arg for arg in self.args)
+        return ' '.join(f'"{arg}"' for arg in self.args)
 
     def execute(self) -> subprocess.CompletedProcess:
         return (
@@ -633,7 +638,7 @@ class Output:
 
     Attributes
     ----------
-    text: The 'stdout' attribute of the 'CompletedProcess' object.
+    text: The 'stdout' attribute of the 'CompletedProcess' object as string.
 
     Methods
     ----------

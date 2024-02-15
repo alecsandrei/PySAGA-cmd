@@ -36,6 +36,9 @@ def main():
     raster.set_title('Flow accumulation map')
     plt.show()
 
+    # Don't forget to clean up the temporary directory (if you used temp files).
+    saga.temp_dir_cleanup()
+
 
 if __name__ == '__main__':
     main()
