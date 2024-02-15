@@ -36,15 +36,15 @@ class TestSaga:
     def test_get_library(self):
         library = 'ta_morphometry'
         lib = self.get_saga().get_library(library=library)
-        command = ' '.join([self.dummy_executable.as_posix(), library])
+        command = ' '.join([f'"{self.dummy_executable.as_posix()}"', f'"{library}"'])
         assert str(lib.command) == command
 
     def test_get_library_div(self):
         lib_name = 'ta_morphometry'
         library_div = self.get_saga() / lib_name
         command = ' '.join(
-            [self.dummy_executable.as_posix(),
-             lib_name]
+            [f'"{self.dummy_executable.as_posix()}"',
+             f'"{lib_name}"']
         )
         assert str(library_div.command) == command
 
@@ -53,9 +53,9 @@ class TestSaga:
         tool_name = '0'
         tool = self.get_saga().get_tool(library=lib_name, tool=tool_name)
         command = ' '.join(
-            [self.dummy_executable.as_posix(),
-             lib_name,
-             tool_name]
+            [f'"{self.dummy_executable.as_posix()}"',
+             f'"{lib_name}"',
+             f'"{tool_name}"']
         )
         assert str(tool.command) == command
 
@@ -64,9 +64,9 @@ class TestSaga:
         tool_name = '0'
         tool_div = self.get_saga() / lib_name / tool_name
         command = ' '.join(
-            [self.dummy_executable.as_posix(),
-             lib_name,
-             tool_name]
+            [f'"{self.dummy_executable.as_posix()}"',
+             f'"{lib_name}"',
+             f'"{tool_name}"']
         )
         assert str(tool_div.command) == command
 
