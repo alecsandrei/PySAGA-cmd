@@ -18,4 +18,5 @@ For information on how to use the package, I recommend looking at the [notebooks
 - [x] Write simple tests.
 - [x] Add a Pipeline object.
 - [ ] Use a tool like zest.releaser to release v1.0.7.
+- [ ] Update examples.
 - [x] Make objects more pythonic.
