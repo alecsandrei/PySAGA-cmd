@@ -16,6 +16,6 @@ For information on how to use the package, I recommend looking at the [notebooks
 
 - [x] Remove all dependencies. All the dependencies will be turned into extra dependencies. Switch from attrs to dataclasses.
 - [x] Write simple tests.
-- [ ] Add pipes.
+- [x] Add a Pipeline object.
 - [ ] Use a tool like zest.releaser to release v1.0.7.
 - [x] Make objects more pythonic.
