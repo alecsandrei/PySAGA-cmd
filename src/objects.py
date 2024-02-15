@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 from typing import (
     Union,
     Iterable,
@@ -11,13 +12,15 @@ from typing import (
 )
 from dataclasses import dataclass
 
+from src.utils import infer_file_extension
+
 try:
     import numpy as np
-    import rasterio as rio
-    import cartopy.crs as ccrs
+    import rasterio as rio  # type: ignore
+    import cartopy.crs as ccrs  # type: ignore
     import matplotlib.axes as axes
     import matplotlib.pyplot as plt
-    import geopandas as gpd
+    import geopandas as gpd  # type: ignore
     gpd.options.io_engine = "pyogrio"
 
 except ModuleNotFoundError as e:
@@ -48,6 +51,11 @@ class Raster:
 
     path: PathLike
 
+    def __post_init__(self):
+        path = Path(os.fspath(self.path))
+        if not path.suffix:
+            self.path = infer_file_extension(Path(path))
+
     def _read_raster(
         self,
         nodata: Union[SupportsFloat, Iterable[SupportsFloat]] = -32768.0
@@ -61,7 +69,6 @@ class Raster:
             tuple: A tuple containing a rasterio.DatasetReader
               and a numpy.array.
         """
-
         with rio.open(self.path) as src:
             array = src.read(1).astype("float")
             if isinstance(nodata, SupportsFloat):
@@ -76,6 +83,7 @@ class Raster:
         nodata: Union[SupportsFloat, Iterable[SupportsFloat]] = -32768.0,
         ax: Optional[axes.Axes] = None,
         cbar=True,
+        cbar_kwargs: Optional[dict] = None,
         **kwargs
     ) -> axes.Axes:
         """This method can be used to plot rasters.
@@ -100,7 +108,11 @@ class Raster:
             fig = plt.figure()
             ax = fig.add_subplot(projection=proj)
         else:
-            fig = ax.figure
+            if ax.figure is None:
+                raise NotImplementedError(
+                    'The provided "ax" argument does not have a figure.'
+                )
+            fig = ax.figure  # type: ignore
         im = ax.imshow(
                 array,
                 cmap=cmap,
@@ -112,7 +124,9 @@ class Raster:
                                 ax.get_position().y0,
                                 0.02,
                                 ax.get_position().height))
-            plt.colorbar(im, cax=cax)
+            if cbar_kwargs is None:
+                cbar_kwargs = {}
+            plt.colorbar(im, cax=cax, **cbar_kwargs)
         return ax
 
     def histogram(
@@ -169,7 +183,12 @@ class Vector:
     plot: Plots the vector object.
     """
 
-    path: str
+    path: PathLike
+
+    def __post_init__(self):
+        path = Path(os.fspath(self.path))
+        if not path.suffix:
+            self.path = infer_file_extension(Path(path))
 
     def _read_vector(self):
         return gpd.read_file(self.path)

@@ -12,6 +12,7 @@ from typing import (
     Protocol,
     Sequence,
     Self,
+    Any,
     TYPE_CHECKING,
 )
 from pathlib import Path
@@ -35,7 +36,7 @@ from src.utils import (
 
 
 if TYPE_CHECKING:
-    from objects import (
+    from objects import (  # type: ignore
         Raster,
         Vector
     )
@@ -140,12 +141,7 @@ class Parameters(dict[str, str]):
         super().__init__()
         for param, value in kwargs.items():
             value = str(value)
-            val_as_path = Path(value)
-            if val_as_path.stem == 'temp':
-                suffix = val_as_path.suffix
-                unix = str(time.time()).split('.')[0]
-                value = (temp_dir() / f'{param}_{unix}{suffix}').as_posix()
-            self[param] = value
+            self[param] = str(value)
 
     def __iter__(self):
         return (param for param in format_parameters(self))
@@ -155,6 +151,15 @@ class Parameters(dict[str, str]):
 
     def __repr__(self):
         return super().__repr__()
+
+    def __getattr__(self, name):
+        try:
+            return self[name]
+        except KeyError as e:
+            raise AttributeError(e)
+
+    def __setattr__(self, name, value):
+        self[name] = value
 
 
 def format_parameters(parameters: Parameters) -> list[str]:
@@ -466,9 +471,30 @@ class Tool(Executable):
         return self.tool
 
     def __call__(self, **kwargs: SupportsStr) -> Self:
+        """Uses keyword argument to define parameters and to set attrs.
+
+        Besides setting attributes and defining the parameters for
+        the tool, it also replaces 'temp' values with a temporary
+        file location.
+        """
+        if self.parameters:
+            for param in self.parameters:
+                # Delete all previous parameter attributes.
+                delattr(self, param)
+        for param, value in kwargs.items():
+            value = str(value)
+            val_as_path = Path(value)
+            if val_as_path.stem == 'temp':
+                suffix = val_as_path.suffix
+                unix = str(time.time()).split('.')[0]
+                kwargs[param] = (
+                    temp_dir() / f'{param}_{unix}{suffix}'
+                ).as_posix()
+            setattr(self, param, kwargs[param])
         self.parameters = Parameters(**kwargs)
-        # print(self.parameters)
         return self
+
+    def __getattr__(self, name: str) -> Any: pass
 
     @property
     def command(self) -> Command:
@@ -521,23 +547,7 @@ class Pipeline:
 
     def __or__(self, tool: Tool) -> Self:
         self.tools.append(tool)
-        self.fill_values()
         return self
-
-    def fill_values(self):
-        """Replaces all the values that start with underscore."""
-        prev_tool = self.tools[-2]
-        tool = self.tools[-1]
-        for param, value in tool.parameters.items():
-            if not value.startswith('_'):
-                continue
-            try:
-                value = prev_tool.parameters[value[1:]]
-                tool.parameters[param] = value
-            except KeyError as e:
-                raise PipelineError(
-                    f'Parameter {value} not found in the previous tool.'
-                ) from e
 
     def execute(self, verbose=False) -> list[Output]:
         """Executes the tools in the pipeline.
@@ -648,7 +658,6 @@ class Output:
     ) -> list[Raster]:
 
         from objects import Raster
-
         if isinstance(parameters, str):
             parameters = [parameters]
         return (

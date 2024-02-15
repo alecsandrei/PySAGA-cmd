@@ -1,7 +1,0 @@
-attrs
-numpy
-matplotlib
-cartopy
-rasterio
-geopandas
-pyogrio

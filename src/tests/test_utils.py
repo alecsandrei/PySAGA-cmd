@@ -18,7 +18,7 @@ def test_check_is_file(tmp_path: Path):
     text = test_check_is_file.__name__
     tmp_file = tmp_path / ''.join([text, '.txt'])
     tmp_file.write_text(text)
-    assert check_is_file(tmp_file) is None
+    check_is_file(tmp_file)
     with pytest.raises(PathDoesNotExist):
         shutil.rmtree(tmp_path)
         check_is_file(path=tmp_path)
@@ -39,4 +39,4 @@ def test_check_is_executable(tmp_path: Path):
         tmp_file = tmp_path / ''.join([text, '.sh'])
         tmp_file.write_text(data='#!/bin/sh')
         tmp_file.chmod(tmp_file.stat().st_mode | 0o755)
-        assert check_is_executable(path=tmp_file) is None
+        check_is_executable(path=tmp_file)

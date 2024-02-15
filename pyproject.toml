@@ -62,9 +62,6 @@ include = ["PySAGA-cmd*"]
 exclude = ["PySAGA-cmd.tests*"]
 namespaces = false
 
-[tool.setuptools.dynamic]
-dependencies = {file = ["requirements.txt"]}
-
 [tool.distutils.bdist_wheel]
 universal = true
 

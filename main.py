@@ -1,12 +1,13 @@
 from src.saga import SAGA
 import matplotlib.pyplot as plt
 
-if __name__ == '__main__':
+
+def main():
     saga = SAGA(saga_cmd='/usr/bin/saga_cmd')
 
     # Defining objects
     dem = './data/example_input/DEM_30m.tif'
-    output = './data/example_output/flow_accumulation.sdat'
+    output = './data/example_output/flow_accumulation'
 
     # Defining libraries
     preprocessor = saga / 'ta_preprocessor'
@@ -20,13 +21,22 @@ if __name__ == '__main__':
     # Piping
     pipe = (
         route_detection(elevation=dem, sinkroute='temp') |
-        sink_removal(dem='_elevation', sinkroute='_sinkroute',
+        sink_removal(dem=route_detection.elevation,
+                     sinkroute=route_detection.sinkroute,
                      dem_preproc='temp') |
-        flow_accumulation(dem='_dem_preproc', flow=output)
+        flow_accumulation(dem=sink_removal.dem_preproc, flow=output)
     )
     outputs = pipe.execute(verbose=True)
 
-    # You can import matplotlib and run the methods below.
+    # If you also install the extra dependencies, the following lines
+    # of code are available and you can plot your output rasters.
     rasters = outputs[-1].get_raster('flow')
-    raster = rasters[0].plot(cmap='hsv')
+    print(rasters)
+    raster = rasters[0].plot(cmap='Blues', norm='log',
+                             cbar_kwargs=dict(label='log of accumulated flow'))
+    raster.set_title('Flow accumulation map')
     plt.show()
+
+
+if __name__ == '__main__':
+    main()
