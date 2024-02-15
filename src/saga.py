@@ -598,7 +598,7 @@ class Command:
     Methods
     ----------
     execute: Passes the 'command' attribute to the 'subprocess.run' function
-        and executes the 'subprocess.run' function.
+      and executes the 'subprocess.run' function.
     """
 
     args: list[str] = field(default_factory=list, init=False)
