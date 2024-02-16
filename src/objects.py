@@ -28,7 +28,7 @@ except ModuleNotFoundError as e:
         f'There was an error importing {e.name} as it is ' +
         'not installed. To install it, run ' +
         '"pip install PySAGA-cmd[extras]".'
-        )
+        ) from e
 
 
 PathLike = Union[str, os.PathLike]
@@ -101,7 +101,7 @@ class Raster:
             matplotlib.axes.Axes: A matplotlib.axes.Axes object.
         """
         src, array = self._read_raster(nodata=nodata)
-        crs = str(src.crs).split(':')[-1]
+        crs = str(src.crs).rsplit(':', maxsplit=1)[-1]
         left, bottom, right, top = src.bounds
         proj = ccrs.epsg(crs)
         if ax is None:
@@ -163,6 +163,7 @@ class Raster:
         self,
         nodata: Union[SupportsFloat, Iterable[SupportsFloat]] = -32768.0
     ):
+        """Returns the raster as a numpy array."""
         return (
             self._read_raster(nodata=nodata)[1]
         )
@@ -176,7 +177,7 @@ class Vector:
 
     Parameters
     ----------
-    path: The file path of the vector.
+    path: The file path of the vector file.
 
     Methods
     ----------
@@ -193,7 +194,12 @@ class Vector:
     def _read_vector(self):
         return gpd.read_file(self.path)
 
-    def plot(self, ax=None, **kwargs) -> axes.Axes:
+    def plot(
+        self,
+        ax: Optional[axes.Axes] = None,
+        **kwargs
+    ) -> axes.Axes:
+        """Plots the vector object."""
         file = self._read_vector()
         if ax is None:
             fig = plt.figure()

@@ -144,31 +144,29 @@ class Parameters(dict[str, str]):
             self[param] = str(value)
 
     def __str__(self):
-        return ' '.join(format_parameters(self))
-
-    def __repr__(self):
-        return super().__repr__()
+        return ' '.join(self.formatted)
 
     def __getattr__(self, name):
         try:
             return self[name]
         except KeyError as e:
-            raise AttributeError(e)
+            raise AttributeError(e) from e
 
     def __setattr__(self, name, value):
         self[name] = value
 
-    def _params_formatted(self):
-        return (param for param in format_parameters(self))
+    @property
+    def formatted(self):
+        return (param for param in self._format_parameters(self))
 
-
-def format_parameters(parameters: Parameters) -> list[str]:
-    """Used to format the parameters as required by SAGAGIS."""
-    params = []
-    param_format = '-{PARAM}={value}'
-    for param, value in parameters.items():
-        params.append(param_format.format(PARAM=param.upper(), value=value))
-    return params
+    @staticmethod
+    def _format_parameters(parameters: Parameters) -> list[str]:
+        """Used to format the parameters as required by SAGAGIS."""
+        params = []
+        param_format = '-{PARAM}={value}'
+        for param, value in parameters.items():
+            params.append(param_format.format(PARAM=param.upper(), value=value))
+        return params
 
 
 @dataclass
@@ -184,17 +182,21 @@ class Executable(ABC):
         """Gets the current command."""
 
     @property
-    @abstractmethod
     def flag(self):
         """Gets the current flag."""
+        return self._flag
 
     @flag.setter
-    def flag(self):
+    def flag(self, flag: Union[str, None, Flag]):
         """Sets the current flag."""
+        if isinstance(flag, Flag):
+            flag = str(flag)
+        self._flag = Flag(flag)
 
     @flag.deleter
     def flag(self):
         """Deletes the current flag."""
+        self._flag = Flag()
 
     @abstractmethod
     def run_command(self) -> Output:
@@ -269,18 +271,6 @@ class SAGA(Executable):
             Command(self.saga_cmd,
                     self.flag)
         )
-
-    @property
-    def flag(self) -> Flag:
-        return self._flag
-
-    @flag.setter
-    def flag(self, flag: Union[str, None]) -> None:
-        self._flag = Flag(flag)
-
-    @flag.deleter
-    def flag(self) -> None:
-        self._flag = Flag()
 
     def get_library(self, library: str) -> Library:
         """Get a SAGA GIS Library object.
@@ -384,18 +374,6 @@ class Library(Executable):
                     self.library)
         )
 
-    @property
-    def flag(self) -> Flag:
-        return self._flag
-
-    @flag.setter
-    def flag(self, flag: Union[str, None]) -> None:
-        self._flag = Flag(flag)
-
-    @flag.deleter
-    def flag(self) -> None:
-        self._flag = Flag()
-
     def get_tool(self, tool: str) -> Tool:
         """Get a SAGA GIS Tool object.
 
@@ -491,7 +469,7 @@ class Tool(Executable):
             val_as_path = Path(value)
             if val_as_path.stem == 'temp':
                 suffix = val_as_path.suffix
-                unix = str(time.time()).split('.')[0]
+                unix = str(time.time()).split('.', maxsplit=1)[0]
                 kwargs[param] = (
                     temp_dir() / f'{param}_{unix}{suffix}'
                 ).as_posix()
@@ -499,7 +477,8 @@ class Tool(Executable):
         self.parameters = Parameters(**kwargs)
         return self
 
-    def __getattr__(self, name: str) -> Any: pass
+    def __getattr__(self, name: str) -> Any:
+        pass
 
     @property
     def command(self) -> Command:
@@ -508,20 +487,8 @@ class Tool(Executable):
                     self.flag,
                     self.library,
                     self.tool,
-                    *self.parameters._params_formatted())
+                    *self.parameters.formatted)
         )
-
-    @property
-    def flag(self) -> Flag:
-        return self._flag
-
-    @flag.setter
-    def flag(self, flag: Union[str, None]) -> None:
-        self._flag = Flag(flag)
-
-    @flag.deleter
-    def flag(self) -> None:
-        self._flag = Flag()
 
     def __or__(self, tool: Tool) -> Pipeline:
         return Pipeline(self) | (tool)

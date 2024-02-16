@@ -1,8 +1,8 @@
 import sys
+import shutil
 from pathlib import Path
 
 import pytest
-import shutil
 
 from src.utils import (
     check_is_executable,
