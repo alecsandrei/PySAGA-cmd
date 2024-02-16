@@ -56,7 +56,7 @@ def get_sagacmd_default() -> Path:
     )
 
 
-def infer_file_extension(path_to_file: Path) -> str:
+def infer_file_extension(path_to_file: Path) -> Path:
     """Attemps to infer the SAGA GIS extension of a file.
 
     First it checks if there is a file with .shp extension
@@ -74,15 +74,14 @@ def infer_file_extension(path_to_file: Path) -> str:
     has_shp = any(file.suffix == '.shp' for file in files_filtered)
     has_sdat = any(file.suffix == '.sdat' for file in files_filtered)
     if not files_filtered:
-        return ''
-    if has_shp and not has_sdat:
-        return '.shp'
+        suffix = ''
+    elif has_shp and not has_sdat:
+        suffix = '.shp'
     elif not has_shp and has_sdat:
-        return '.sdat'
+        suffix = '.sdat'
     else:
-        return (
-            sorted(files_filtered, key=sys.getsizeof)[-1].suffix
-        )
+        suffix = sorted(files_filtered, key=sys.getsizeof)[-1].suffix
+    return path_to_file.with_suffix(suffix)
 
 
 class NotExecutableError(Exception):

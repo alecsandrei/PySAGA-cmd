@@ -52,9 +52,9 @@ class Raster:
     path: PathLike
 
     def __post_init__(self):
-        path = Path(os.fspath(self.path))
-        if not path.suffix:
-            self.path = infer_file_extension(Path(path))
+        self.path = Path(self.path)
+        if not self.path.suffix:
+            self.path = infer_file_extension(self.path)
 
     def _read_raster(
         self,
@@ -187,9 +187,9 @@ class Vector:
     path: PathLike
 
     def __post_init__(self):
-        path = Path(os.fspath(self.path))
-        if not path.suffix:
-            self.path = infer_file_extension(Path(path))
+        self.path = Path(self.path)
+        if not self.path.suffix:
+            self.path = infer_file_extension(self.path)
 
     def _read_vector(self):
         return gpd.read_file(self.path)

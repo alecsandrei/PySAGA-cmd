@@ -41,12 +41,13 @@ if TYPE_CHECKING:
         Vector
     )
 
-PathLike = Union[str, os.PathLike]
-
 
 @cache
 def temp_dir():
     return Path(tempfile.mkdtemp())
+
+
+PathLike = Union[str, os.PathLike]
 
 
 @dataclass
@@ -77,7 +78,7 @@ class SAGACMD:
         if saga_cmd_path is None:
             saga_cmd_path = get_sagacmd_default()
         elif not isinstance(saga_cmd_path, Path):
-            saga_cmd_path = Path(os.fspath(saga_cmd_path))
+            saga_cmd_path = Path(saga_cmd_path)
         self.saga_cmd_path = saga_cmd_path
         check_is_file(self.saga_cmd_path)
         check_is_executable(self.saga_cmd_path)
@@ -493,18 +494,16 @@ class Tool(Executable):
     def __or__(self, tool: Tool) -> Pipeline:
         return Pipeline(self) | (tool)
 
-    def run_command(self, **kwargs: SupportsStr) -> Output:
+    def run_command(self, **kwargs: SupportsStr) -> ToolOutput:
         if kwargs:
             self(**kwargs)
         for param, value in self.parameters.items():
             value_as_path = Path(value)
             if value_as_path.parent.exists() and not value_as_path.suffix:
-                value = ''.join(
-                    [value, infer_file_extension(value_as_path)]
-                )
+                value = str(infer_file_extension(value_as_path))
                 self.parameters[param] = value
         completed_process = self.command.execute()
-        return Output(completed_process, self.parameters)
+        return ToolOutput(completed_process, self.parameters)
 
 
 @dataclass
@@ -521,7 +520,7 @@ class Pipeline:
         self.tools.append(tool)
         return self
 
-    def execute(self, verbose=False) -> list[Output]:
+    def execute(self, verbose=False) -> list[ToolOutput]:
         """Executes the tools in the pipeline.
 
         Args:
@@ -618,11 +617,15 @@ class Output:
     """
 
     completed_process: subprocess.CompletedProcess
-    parameters: Parameters = field(default_factory=Parameters)
     text: str = field(init=False)
 
     def __post_init__(self) -> None:
         self.text = str(self.completed_process.stdout)
+
+
+@dataclass
+class ToolOutput(Output):
+    parameters: Parameters = field(default_factory=Parameters)
 
     def get_raster(
         self,
@@ -630,6 +633,7 @@ class Output:
     ) -> list[Raster]:
 
         from objects import Raster
+
         if isinstance(parameters, str):
             parameters = [parameters]
         return (

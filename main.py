@@ -5,9 +5,12 @@ import matplotlib.pyplot as plt
 def main():
     saga = SAGA(saga_cmd='/usr/bin/saga_cmd')
 
-    # Defining objects
+    # Defining objects.
+    # In general, it's good behaviour to specify file extension.
+    # So please, do specify them for output objects (youc can even
+    # do it for 'temp'!)
     dem = './data/example_input/DEM_30m.tif'
-    output = './data/example_output/flow_accumulation'
+    output = './data/example_output/flow_accumulation.sdat'
 
     # Defining libraries
     preprocessor = saga / 'ta_preprocessor'
@@ -20,10 +23,10 @@ def main():
 
     # Piping
     pipe = (
-        route_detection(elevation=dem, sinkroute='temp') |
+        route_detection(elevation=dem, sinkroute='temp.sdat') |
         sink_removal(dem=route_detection.elevation,
                      sinkroute=route_detection.sinkroute,
-                     dem_preproc='temp') |
+                     dem_preproc='temp.sdat') |
         flow_accumulation(dem=sink_removal.dem_preproc, flow=output)
     )
     outputs = pipe.execute(verbose=True)
