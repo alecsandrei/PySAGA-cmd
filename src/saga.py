@@ -11,6 +11,7 @@ from typing import (
     Optional,
     Protocol,
     Sequence,
+    Iterable,
     Self,
     Any,
     TYPE_CHECKING,
@@ -170,10 +171,16 @@ class Parameters(dict[str, str]):
         return params
 
 
-@dataclass
 class Executable(ABC):
     """Describes an object that is executable."""
 
+    @abstractmethod
+    def execute(self) -> Union[ToolOutput, Iterable[ToolOutput], Output]:
+        """Implements the execution behaviour of the object."""
+
+
+class SagaExecutable(Executable):
+    """Describes an executable inside SAGAGIS."""
     saga_cmd: SAGACMD
     _flag: Flag
 
@@ -199,13 +206,9 @@ class Executable(ABC):
         """Deletes the current flag."""
         self._flag = Flag()
 
-    @abstractmethod
-    def run_command(self) -> Output:
-        """Runs the 'execute' method of a Command type object."""
-
 
 @dataclass
-class SAGA(Executable):
+class SAGA(SagaExecutable):
     """The SAGA GIS main program as an object.
 
     Parameters
@@ -221,7 +224,7 @@ class SAGA(Executable):
     saga_cmd: A 'SAGACMD' object describing the 'saga_cmd' executable.
     flag: A 'Flag' object describing the flag that will be used when
       running the command.
-    command: The command that will be executed with the 'run_command' method.
+    command: The command that will be executed with the 'execute' method.
 
     Methods
     -------
@@ -229,7 +232,7 @@ class SAGA(Executable):
       and returns a 'Library' object.
     get_tool: Takes as input a library tool name (e.g '0')
       and returns a 'Tool' object.
-    run_command: Executes the command. To see the command that will be
+    execute: Executes the command. To see the command that will be
       executed, check the 'command' property of this class.
     """
 
@@ -308,14 +311,14 @@ class SAGA(Executable):
                  flag=self.flag)
         )
 
-    def run_command(self) -> Output:
+    def execute(self) -> Output:
         return (
             Output(self.command.execute())
         )
 
 
 @dataclass
-class Library(Executable):
+class Library(SagaExecutable):
     """Describes a SAGA GIS library.
 
     Parameters
@@ -332,14 +335,14 @@ class Library(Executable):
     saga_cmd: A 'SAGACMD' object describing the 'saga_cmd' executable.
     flag: A 'Flag' object describing the flag that will be used when
       running the command.
-    command: The command that will be executed with the 'run_command' method.
+    command: The command that will be executed with the 'execute' method.
     library: The library name.
 
     Methods
     -------
     get_tool: Takes as input a library tool name (e.g. '0')
       and returns a 'Tool' object.
-    run_command: Executes the command. To see the command that will be
+    execute: Executes the command. To see the command that will be
       executed, check the 'command' property of this class.
     """
 
@@ -393,14 +396,14 @@ class Library(Executable):
                  tool=tool)
         )
 
-    def run_command(self) -> Output:
+    def execute(self) -> Output:
         return (
             Output(self.command.execute())
         )
 
 
 @dataclass
-class Tool(Executable):
+class Tool(SagaExecutable):
     """Describes a SAGA GIS tool.f
 
     Parameters
@@ -418,13 +421,13 @@ class Tool(Executable):
     saga_cmd: A 'SAGACMD' object describing the 'saga_cmd' executable.
       running the command.
     flag: A 'Flag' object describing the flag that will be used when
-    command: The command that will be executed with the 'run_command' method.
+    command: The command that will be executed with the 'execute' method.
     library: The SAGA GIS library object.
     tool: The tool name.
 
     Methods
     -------
-    run_command: Takes as input keyword arguments which will be
+    execute: Takes as input keyword arguments which will be
       used to construct a 'Parameters' object. Example of a keyword
       argument would be 'elevation=/path/to/raster. To see the command
       that will be executed, check the 'command' attribute of this class.
@@ -494,7 +497,7 @@ class Tool(Executable):
     def __or__(self, tool: Tool) -> Pipeline:
         return Pipeline(self) | (tool)
 
-    def run_command(self, **kwargs: SupportsStr) -> ToolOutput:
+    def execute(self, **kwargs: SupportsStr) -> ToolOutput:
         if kwargs:
             self(**kwargs)
         for param, value in self.parameters.items():
@@ -507,7 +510,7 @@ class Tool(Executable):
 
 
 @dataclass
-class Pipeline:
+class Pipeline(Executable):
     tools: list[Tool]
 
     def __init__(
@@ -529,7 +532,7 @@ class Pipeline:
         """
         outputs = []
         for tool in self.tools:
-            output = tool.run_command()
+            output = tool.execute()
             if verbose:
                 lines = output.text.split('\n')
                 cleaned_lines = [line for line in lines
