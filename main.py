@@ -30,7 +30,6 @@ def main():
         flow_accumulation(dem=sink_removal.dem_preproc, flow=output)
     )
     outputs = pipe.execute(verbose=True)
-
     # If you also install the extra dependencies, the following lines
     # of code are available and you can plot your output rasters.
     rasters = outputs[-1].get_raster('flow')

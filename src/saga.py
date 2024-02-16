@@ -26,7 +26,6 @@ from dataclasses import (
     dataclass,
     field
 )
-from functools import cache
 
 from src.utils import (
     check_is_file,
@@ -43,7 +42,6 @@ if TYPE_CHECKING:
     )
 
 
-@cache
 def temp_dir():
     return Path(tempfile.mkdtemp())
 
@@ -54,6 +52,10 @@ PathLike = Union[str, os.PathLike]
 @dataclass
 class SAGACMD:
     """The saga_cmd file object.
+
+    # TODO: implement some sort of searching for the 'saga_cmd' file.
+    If the saga_cmd_path parameter is not provided, a default value
+    will be set according to the user's platform.
 
     Parameters
     ----------
@@ -84,37 +86,37 @@ class SAGACMD:
         check_is_file(self.saga_cmd_path)
         check_is_executable(self.saga_cmd_path)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return os.fspath(self.saga_cmd_path)
 
-    def __fspath__(self):
+    def __fspath__(self) -> str:
         return str(self)
 
 
 @dataclass
 class Flag:
-    """Describes a flag object that can be used when running commands.
+    """Describes a flag object that can be used when executing objects.
 
     Parameters
     ----------
-    flag: The flag to use when running the command. Examples of flags include:
+    flag: The flag to use when executing the objects. Examples of flags include:
       'cores=8', 'flags=s', 'help', 'version' etc. Check the SAGA GIS
       documentation if you want to find out more about flags.
     """
 
     flag: Optional[str] = field(default=None)
 
-    def __str__(self):
+    def __str__(self) -> str:
         if self.flag is None:
             return ''
         if isinstance(self.flag, str) and not self.flag.startswith('--'):
             return ''.join(['--' + self.flag])
         return self.flag
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         return self.flag is not None
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         return str(self) == other
 
 
@@ -122,13 +124,16 @@ class Flag:
 class Parameters(dict[str, str]):
     """The SAGA GIS tool parameters.
 
-    This object inherits from UserDict and therefore cand be
-    used as a dictionary.
+    This object inherits from 'dict'.
 
     Parameters
     ----------
     **kwargs: The tool parameters as keyword arguments. For example,
       'elevation=/path/to/raster' could be a keyword argument.
+
+    Attributes
+    ----------
+    formatted: A tuple of the parameters formatted as required by SAGA GIS.
 
     Examples
     ---------
@@ -136,7 +141,7 @@ class Parameters(dict[str, str]):
     ...                     grid='path/to/grid',
     ...                     method=0)
     >>> print(params)
-    -ELEVATION='path/to/elevation' -GRID='path/to/grid' -METHOD='0'
+    -ELEVATION=path/to/raster -GRID=path/to/grid -METHOD=0
     """
 
     def __init__(self, **kwargs: SupportsStr) -> None:
@@ -145,21 +150,21 @@ class Parameters(dict[str, str]):
             value = str(value)
             self[param] = str(value)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return ' '.join(self.formatted)
 
-    def __getattr__(self, name):
+    def __getattr__(self, name: str) -> str:
         try:
             return self[name]
         except KeyError as e:
             raise AttributeError(e) from e
 
-    def __setattr__(self, name, value):
+    def __setattr__(self, name, value) -> None:
         self[name] = value
 
     @property
-    def formatted(self):
-        return (param for param in self._format_parameters(self))
+    def formatted(self) -> list[str]:
+        return self._format_parameters(self)
 
     @staticmethod
     def _format_parameters(parameters: Parameters) -> list[str]:
@@ -211,10 +216,12 @@ class SagaExecutable(Executable):
 class SAGA(SagaExecutable):
     """The SAGA GIS main program as an object.
 
+    This object inherits from 'SagaExecutable'.
+
     Parameters
     ----------
-    saga_cmd: The file path to the 'saga_cmd' file. For information
-      on where to find it, check the following link:
+    saga_cmd: The file path to the 'saga_cmd' file or a SAGACMD object.
+    For information on where to find it, check the following link:
       https://sourceforge.net/projects/saga-gis/files/SAGA%20-%20Documentation/Tutorials/Command_Line_Scripting/.
     flag: The flag to use when running the command. For more details, check
       the docstrings for the 'Flag' object in this module.
@@ -225,6 +232,8 @@ class SAGA(SagaExecutable):
     flag: A 'Flag' object describing the flag that will be used when
       running the command.
     command: The command that will be executed with the 'execute' method.
+    temp_dir: A temporary directory where temporary files will be saved to.
+    temp_files: A list of temporary files.
 
     Methods
     -------
@@ -234,6 +243,7 @@ class SAGA(SagaExecutable):
       and returns a 'Tool' object.
     execute: Executes the command. To see the command that will be
       executed, check the 'command' property of this class.
+    temp_dir_cleanup: Deletes the temporary directory.
     """
 
     def __init__(
@@ -247,6 +257,7 @@ class SAGA(SagaExecutable):
             flag = Flag(flag)
         self.saga_cmd = saga_cmd
         self._flag = flag
+        self._temp_dir = temp_dir()
 
     def __truediv__(self, library: Union[Library, str]):
         if isinstance(library, str):
@@ -255,14 +266,22 @@ class SAGA(SagaExecutable):
 
     @property
     def temp_dir(self) -> Path:
-        return temp_dir()
+        if not self._temp_dir.exists():
+            self._temp_dir = temp_dir()
+        return self._temp_dir
 
     @property
     def temp_files(self):
-        return list(temp_dir().iterdir())
+        """Lists the temporary files.
+
+        The temporary files are names by their parameter
+        name and unix time, separated by an underscore.
+        """
+        return list(self.temp_dir.iterdir())
 
     def temp_dir_cleanup(self):
-        files = [*self.temp_dir.iterdir()]
+        """Removes the temporary directory."""
+        files = self.temp_files[:]
         shutil.rmtree(self.temp_dir)
         print('The following files were removed:')
         for file in files:
@@ -271,10 +290,7 @@ class SAGA(SagaExecutable):
 
     @property
     def command(self) -> Command:
-        return (
-            Command(self.saga_cmd,
-                    self.flag)
-        )
+        return Command(self.saga_cmd, self.flag)
 
     def get_library(self, library: str) -> Library:
         """Get a SAGA GIS Library object.
@@ -287,9 +303,7 @@ class SAGA(SagaExecutable):
         Returns:
             Library: An object describing the SAGA GIS library.
         """
-        return (
-            Library(saga_cmd=self.saga_cmd, flag=self.flag, library=library)
-        )
+        return Library(saga=self, library=library)
 
     def get_tool(self, library: str, tool: str) -> Tool:
         """Get a SAGA GIS Tool object.
@@ -304,17 +318,10 @@ class SAGA(SagaExecutable):
             Tool: An object describing the SAGA GIS tool.
         """
         library_ = self.get_library(library)
-        return (
-            Tool(library=library_,
-                 tool=tool,
-                 saga_cmd=self.saga_cmd,
-                 flag=self.flag)
-        )
+        return Tool(library=library_, tool=tool)
 
     def execute(self) -> Output:
-        return (
-            Output(self.command.execute())
-        )
+        return Output(self.command.execute())
 
 
 @dataclass
@@ -323,43 +330,37 @@ class Library(SagaExecutable):
 
     Parameters
     ----------
-    library: the SAGA GIS library name.
-    saga_cmd: The file path to the 'saga_cmd' file. For information
-      on where to find it, check the following link:
-      https://sourceforge.net/projects/saga-gis/files/SAGA%20-%20Documentation/Tutorials/Command_Line_Scripting/.
-    flag: The flag to use when running the command. For more details, check
-      the docstrings for the 'Flag' object in this module.
+    saga: A 'SAGA' object.
+    library: The SAGA GIS library name.
 
     Attributes
     ----------
+    saga: The 'SAGA' object used to access this library.
     saga_cmd: A 'SAGACMD' object describing the 'saga_cmd' executable.
     flag: A 'Flag' object describing the flag that will be used when
-      running the command.
+      executing the command.
     command: The command that will be executed with the 'execute' method.
-    library: The library name.
+    library: The name of the library.
 
     Methods
     -------
-    get_tool: Takes as input a library tool name (e.g. '0')
+    get_tool: Takes as input a tool name inside the library (e.g. '0')
       and returns a 'Tool' object.
     execute: Executes the command. To see the command that will be
       executed, check the 'command' property of this class.
     """
 
+    saga: SAGA
     library: str
 
     def __init__(
         self,
+        saga: SAGA,
         library: str,
-        saga_cmd: Optional[Union[PathLike, SAGACMD]] = None,
-        flag: Optional[Union[str, Flag]] = None
     ) -> None:
-        if not isinstance(saga_cmd, SAGACMD):
-            saga_cmd = SAGACMD(saga_cmd)
-        if not isinstance(flag, Flag):
-            flag = Flag(flag)
-        self.saga_cmd = saga_cmd
-        self._flag = flag
+        self.saga = saga
+        self.saga_cmd = self.saga.saga_cmd
+        self._flag = self.saga.flag
         self.library = library
 
     def __str__(self):
@@ -372,11 +373,7 @@ class Library(SagaExecutable):
 
     @property
     def command(self) -> Command:
-        return (
-            Command(self.saga_cmd,
-                    self.flag,
-                    self.library)
-        )
+        return Command(self.saga_cmd, self.flag, self.library)
 
     def get_tool(self, tool: str) -> Tool:
         """Get a SAGA GIS Tool object.
@@ -389,17 +386,10 @@ class Library(SagaExecutable):
         Returns:
             Tool: An object describing the SAGA GIS tool.
         """
-        return (
-            Tool(saga_cmd=self.saga_cmd,
-                 flag=self.flag,
-                 library=self,
-                 tool=tool)
-        )
+        return Tool(library=self, tool=tool)
 
     def execute(self) -> Output:
-        return (
-            Output(self.command.execute())
-        )
+        return Output(self.command.execute())
 
 
 @dataclass
@@ -441,16 +431,11 @@ class Tool(SagaExecutable):
         self,
         library: Library,
         tool: str,
-        saga_cmd: Optional[Union[PathLike, SAGACMD]] = None,
-        flag: Optional[Union[str, Flag]] = None
     ) -> None:
-        if not isinstance(saga_cmd, SAGACMD):
-            saga_cmd = SAGACMD(saga_cmd)
-        if not isinstance(flag, Flag):
-            flag = Flag(flag)
-        self.saga_cmd = saga_cmd
-        self._flag = flag
         self.library = library
+        self.saga = self.library.saga
+        self.saga_cmd = self.saga.saga_cmd
+        self._flag = self.library.flag
         self.tool = tool
         self.parameters = Parameters()
 
@@ -458,28 +443,35 @@ class Tool(SagaExecutable):
         return self.tool
 
     def __call__(self, **kwargs: SupportsStr) -> Self:
-        """Uses keyword argument to define parameters and to set attrs.
-
-        Besides setting attributes and defining the parameters for
-        the tool, it also replaces 'temp' values with a temporary
-        file location.
-        """
+        """Uses keyword argument to define the tool parameters."""
         if self.parameters:
-            for param in self.parameters:
-                # Delete all previous parameter attributes.
-                delattr(self, param)
-        for param, value in kwargs.items():
+            self._del_attr_params()
+        self.parameters = Parameters(**kwargs)
+        self._set_attr_params()
+        return self
+
+    def _del_attr_params(self):
+        """Delets the attributes describing parameters."""
+        for param in self.parameters:
+            # Delete all previous parameter attributes.
+            delattr(self, param)
+
+    def _set_attr_params(self):
+        """Sets the parameters of the tool as attributes.
+
+        Besides setting attributes, it also replaces 'temp'
+        values with a temporary file location.
+        """
+        for param, value in self.parameters.items():
             value = str(value)
             val_as_path = Path(value)
             if val_as_path.stem == 'temp':
                 suffix = val_as_path.suffix
                 unix = str(time.time()).split('.', maxsplit=1)[0]
-                kwargs[param] = (
-                    temp_dir() / f'{param}_{unix}{suffix}'
-                ).as_posix()
-            setattr(self, param, kwargs[param])
-        self.parameters = Parameters(**kwargs)
-        return self
+                self.parameters[param] = str(
+                    self.library.saga.temp_dir / f'{param}_{unix}{suffix}'
+                )
+            setattr(self, param, self.parameters[param])
 
     def __getattr__(self, name: str) -> Any:
         pass

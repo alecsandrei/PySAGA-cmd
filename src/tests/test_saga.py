@@ -93,10 +93,11 @@ class TestLibrary:
 
     def test_initialize(self):
         name = 'ta_morphometry'
+        saga = SAGA(self.dummy_executable)
+        saga.flag = '--help'
         lib = Library(
-            saga_cmd=self.dummy_executable,
+            saga=saga,
             library=name,
-            flag='help'
         )
         assert lib
         assert lib.flag == '--help'
@@ -109,14 +110,14 @@ class TestTool:
         self.dummy_executable = dummy_executable(tmp_path)
 
     def test_initialize(self):
+        saga = SAGA(self.dummy_executable)
         lib_name = 'ta_morphometry'
         tool_name = '0'
-        lib = Library(saga_cmd=self.dummy_executable, library=lib_name)
+        lib = Library(saga=saga, library=lib_name)
+        lib.flag = '--help'
         tool = Tool(
             library=lib,
             tool=tool_name,
-            saga_cmd=self.dummy_executable,
-            flag='help'
         )
         assert tool
         assert tool.flag == '--help'
