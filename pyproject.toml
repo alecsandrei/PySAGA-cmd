@@ -62,6 +62,10 @@ include = ["PySAGA-cmd*"]
 exclude = ["PySAGA-cmd.tests*"]
 namespaces = false
 
+[tool.setuptools.package-data]
+assets = ["*"]
+examples = ["*"]
+
 [tool.distutils.bdist_wheel]
 universal = true
 
