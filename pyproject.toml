@@ -54,13 +54,9 @@ build-backend = "setuptools.build_meta"
 
 [tool]
 
-[tool.setuptools_scm]
-
 [tool.setuptools.packages.find]
 where = ["src"]
-include = ["PySAGA-cmd*"]
-exclude = ["PySAGA-cmd.tests*"]
-namespaces = false
+exclude = ["data*", "assets*", "examples*", "src.tests*"]
 
 [tool.distutils.bdist_wheel]
 universal = true
