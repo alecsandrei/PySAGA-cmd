@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 def main():
     saga = SAGA(saga_cmd='/usr/bin/saga_cmd')
 
+    print(saga)
+
     # Defining objects.
     # In general, it's good behaviour to specify file extension.
     # So please, do specify them for output objects (youc can even

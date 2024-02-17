@@ -17,7 +17,6 @@ from PySAGA_cmd.utils import infer_file_extension
 try:
     import numpy as np
     import rasterio as rio  # type: ignore
-    import cartopy.crs as ccrs  # type: ignore
     import matplotlib.axes as axes
     import matplotlib.pyplot as plt
     from mpl_toolkits.axes_grid1 import make_axes_locatable  # type: ignore
@@ -102,12 +101,10 @@ class Raster:
             matplotlib.axes.Axes: A matplotlib.axes.Axes object.
         """
         src, array = self._read_raster(nodata=nodata)
-        crs = str(src.crs).rsplit(':', maxsplit=1)[-1]
         left, bottom, right, top = src.bounds
-        proj = ccrs.epsg(crs)
         if ax is None:
             fig = plt.figure()
-            ax = fig.add_subplot(projection=proj)
+            ax = fig.add_subplot()
         else:
             if ax.figure is None:
                 raise NotImplementedError(

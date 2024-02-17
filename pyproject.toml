@@ -31,7 +31,6 @@ all = [
 extras = [
     "numpy",
     "matplotlib",
-    "cartopy",
     "rasterio",
     "geopandas",
     "pyogrio"
