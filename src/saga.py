@@ -260,9 +260,9 @@ class SAGA(SagaExecutable):
         self._flag = flag
         self._temp_dir = temp_dir()
 
-    def __truediv__(self, library: Union[Library, str]):
-        if isinstance(library, str):
-            return self.get_library(library=library)
+    def __truediv__(self, library: Union[Library, SupportsStr]):
+        if not isinstance(library, Library):
+            return self.get_library(library=str(library))
         return library
 
     @property
@@ -367,9 +367,9 @@ class Library(SagaExecutable):
     def __str__(self):
         return self.library
 
-    def __truediv__(self, tool: Union[Tool, str]):
-        if isinstance(tool, str):
-            return self.get_tool(tool=tool)
+    def __truediv__(self, tool: Union[Tool, SupportsStr]):
+        if not isinstance(tool, Tool):
+            return self.get_tool(tool=str(tool))
         return tool
 
     @property

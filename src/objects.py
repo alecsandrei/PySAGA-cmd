@@ -8,7 +8,7 @@ from typing import (
     Union,
     Iterable,
     SupportsFloat,
-    Optional
+    Optional,
 )
 from dataclasses import dataclass
 
@@ -20,6 +20,7 @@ try:
     import cartopy.crs as ccrs  # type: ignore
     import matplotlib.axes as axes
     import matplotlib.pyplot as plt
+    from mpl_toolkits.axes_grid1 import make_axes_locatable  # type: ignore
     import geopandas as gpd  # type: ignore
     gpd.options.io_engine = "pyogrio"
 
@@ -45,7 +46,7 @@ class Raster:
     Methods
     ----------
     plot: Plots the raster file. Returns a 'GeoAxes' object.
-    histogram: Plots a histogram of the raster file. Returns an 'Axes' object.
+    hist: Plots a hist of the raster file. Returns an 'Axes' object.
     to_numpy: Returns the Raster object as a 'np.array' object.
     """
 
@@ -120,22 +121,22 @@ class Raster:
                 **kwargs)
         if cbar:
             assert fig is not None
-            cax = fig.add_axes((ax.get_position().x1+0.01,
-                                ax.get_position().y0,
-                                0.02,
-                                ax.get_position().height))
             if cbar_kwargs is None:
                 cbar_kwargs = {}
-            plt.colorbar(im, cax=cax, **cbar_kwargs)
+            if 'cax' not in cbar_kwargs:
+                cbar_kwargs['cax'] = (make_axes_locatable(ax)
+                                      .append_axes("right", size="5%",
+                                                   pad=0.05))
+            plt.colorbar(im, **cbar_kwargs)
         return ax
 
-    def histogram(
+    def hist(
         self,
         nodata: Union[SupportsFloat, Iterable[SupportsFloat]] = -32768.0,
-        ax=None,
+        ax: Optional[axes.Axes] = None,
         **kwargs
     ) -> axes.Axes:
-        """This method can be used to plot a histogram of raster.
+        """This method can be used to plot a hist of raster.
 
         Args:
             cmap: A matplotlib colormap. For more details check the matplotlib
