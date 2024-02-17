@@ -1,10 +1,11 @@
 include LICENSE
 include README.md
 
-recursive-exclude PySAGA_cmd/data *
-recursive-exclude PySAGA_cmd/examples *
-recursive-exclude PySAGA_cmd/src/tests *
-recursive-exclude *.png
+recursive-exclude data *
+recursive-exclude examples *
+recursive-exclude assets *
+recursive-exclude src/tests *
+recursive-exclude * *.png
 recursive-exclude * __pycache__
 recursive-exclude * *.py[co]
 recursive-exclude * *.ipynb
