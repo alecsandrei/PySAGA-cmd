@@ -38,7 +38,7 @@ extras = [
 ]
 dev = [
     "twine",
-    "zest.releaser",
+    "zest.releaser[recommended]",
     "mypy",
     "flake8",
     "Flake8-pyproject",
