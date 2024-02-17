@@ -141,7 +141,7 @@ slope.hist(ax=ax4, **hist_kwargs)
  
 plt.tight_layout()
 ```
-<img src="./assets/plot1.png" />
+<img src="https://github.com/alecsandrei/PySAGA-cmd/blob/master/assets/plot1.png?raw=true" />
 
 For extra information on how to use the package, you can also look at the [notebooks](https://github.com/alecsandrei/PySAGA-cmd/tree/master/examples/notebooks) inside the examples folder on the Github page.
 
