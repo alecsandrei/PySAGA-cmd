@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from src.saga import (
+from PySAGA_cmd.saga import (
     SAGA,
     Library,
     Tool,

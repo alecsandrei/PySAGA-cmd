@@ -27,7 +27,7 @@ from dataclasses import (
     field
 )
 
-from src.utils import (
+from PySAGA_cmd.utils import (
     check_is_file,
     check_is_executable,
     get_sagacmd_default,

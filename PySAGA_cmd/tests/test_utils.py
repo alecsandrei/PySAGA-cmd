@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from src.utils import (
+from PySAGA_cmd.utils import (
     check_is_executable,
     check_is_file,
     PathDoesNotExist,

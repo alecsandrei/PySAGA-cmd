@@ -1,4 +1,4 @@
-from src.saga import SAGA
+from PySAGA_cmd.saga import SAGA
 import matplotlib.pyplot as plt
 
 

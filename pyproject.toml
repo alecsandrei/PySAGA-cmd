@@ -1,6 +1,6 @@
 [project]
 name = "PySAGA-cmd"
-version = "1.0.3"
+version = "1.0.4"
 dynamic = [
     "dependencies",
 ]
@@ -55,12 +55,10 @@ build-backend = "setuptools.build_meta"
 [tool]
 
 [tool.setuptools.packages.find]
-
-[tool.distutils.bdist_wheel]
-universal = true
+exclude = ["assets", "data", "data.*", "dist", "examples", "examples.*"]
 
 [tool.zest-releaser]
-python-file-with-version = "src/__init__.py"
+python-file-with-version = "PySAGA_cmd/__init__.py"
 
 [tool.flake8]
 max-line-length = 80

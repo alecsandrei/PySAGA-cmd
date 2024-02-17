@@ -12,7 +12,7 @@ from typing import (
 )
 from dataclasses import dataclass
 
-from src.utils import infer_file_extension
+from PySAGA_cmd.utils import infer_file_extension
 
 try:
     import numpy as np
