@@ -1,3 +1,4 @@
+[![DOI](https://zenodo.org/badge/711593377.svg)](https://zenodo.org/doi/10.5281/zenodo.10673418)
 # PySAGA-cmd
 PySAGA-cmd is a simple way of running SAGA GIS tools using Python.
 
