@@ -151,6 +151,6 @@ For extra information on how to use the package, you can also look at the [noteb
 - [x] Remove all dependencies. All the dependencies will be turned into extra dependencies. Switch from attrs to dataclasses.
 - [x] Write simple tests.
 - [x] Add a Pipeline object.
-- [ ] Use a tool like zest.releaser to release v1.0.0.
+- [x] Use a tool like zest.releaser to release v1.0.0.
 - [x] Update notebook examples with new API and README.md.
 - [x] Make objects more pythonic.
