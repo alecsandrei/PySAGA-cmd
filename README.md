@@ -94,7 +94,9 @@ saga.temp_dir_cleanup()
 After the execution of a *Tool*, we can use the returned *Output* object to plot the results.
 
 ```python
-# If you set a flag to the SAGA object that would stop the tool from working (like 'help'), make sure to remove it before accesing the tools, like so:
+# If you set a flag to the SAGA object that would stop the tool
+# from working (like 'help'), make sure to remove it before accesing
+# the tools, like so:
 saga.flag = None
 
 # Defining tools.
