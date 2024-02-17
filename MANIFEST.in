@@ -3,8 +3,8 @@ include README.md
 
 recursive-exclude PySAGA_cmd/data *
 recursive-exclude PySAGA_cmd/examples *
-recursive-exclude PySAGA_cmd/assets *
-recursive-exclude tests *
+recursive-exclude PySAGA_cmd/src/tests *
+recursive-exclude *.png
 recursive-exclude * __pycache__
 recursive-exclude * *.py[co]
 recursive-exclude * *.ipynb
