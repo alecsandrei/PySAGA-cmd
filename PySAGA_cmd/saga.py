@@ -674,7 +674,7 @@ class ToolOutput(Output):
         parameters: Union[Sequence[str], str]
     ) -> list[Raster]:
 
-        from objects import Raster
+        from .objects import Raster
 
         if isinstance(parameters, str):
             parameters = [parameters]
@@ -688,7 +688,7 @@ class ToolOutput(Output):
         parameters: Union[Sequence[str], str]
     ) -> list[Vector]:
 
-        from objects import Vector
+        from .objects import Vector
 
         if isinstance(parameters, str):
             parameters = [parameters]
