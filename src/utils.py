@@ -84,6 +84,37 @@ def infer_file_extension(path_to_file: Path) -> Path:
     return path_to_file.with_suffix(suffix)
 
 
+def dynamic_print(popen: subprocess.Popen[str]):
+    while True:
+        if popen.stdout is None:
+            break
+        output = popen.stdout.readline()
+        if not output and popen.poll() is not None:
+            break
+        if output:
+            output = output.strip()
+            if '%' not in output:
+                continue
+            print(output.strip(), end=print_end(output), flush=True)
+    return popen.poll()
+
+
+def print_end(string: str):
+    """The 'end' parameter is a newline or a carriage return character."""
+    if '100' in string or any(char.isalpha() for char in string):
+        return '\n'
+    return '\r'
+
+
+def remove_unwanted_characters(string: str):
+    unwanted_chars = '#_'
+    return (
+        ''
+        .join(char for char in string if char not in unwanted_chars)
+        .strip()
+    )
+
+
 class NotExecutableError(Exception):
     """Raised when a system file can not be executed."""
     def __init__(self, message: str):

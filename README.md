@@ -12,11 +12,11 @@ pip install PySAGA-cmd
 For information on how to use the package, I recommend looking at the [notebooks](https://github.com/alecsandrei/PySAGA-cmd/tree/master/examples/notebooks) inside the examples folder on the Github page.
 
 
-# TODO before the launch of v1.0.7.
+# TODO before the launch of v1.0.0.
 
 - [x] Remove all dependencies. All the dependencies will be turned into extra dependencies. Switch from attrs to dataclasses.
 - [x] Write simple tests.
 - [x] Add a Pipeline object.
-- [ ] Use a tool like zest.releaser to release v1.0.7.
+- [ ] Use a tool like zest.releaser to release v1.0.0.
 - [ ] Update examples.
 - [x] Make objects more pythonic.

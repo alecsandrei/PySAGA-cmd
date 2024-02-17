@@ -32,6 +32,7 @@ from src.utils import (
     check_is_executable,
     get_sagacmd_default,
     infer_file_extension,
+    dynamic_print,
 )
 
 
@@ -200,9 +201,9 @@ class SagaExecutable(Executable):
         return self._flag
 
     @flag.setter
-    def flag(self, flag: Union[str, None, Flag]):
+    def flag(self, flag: Union[SupportsStr, None]):
         """Sets the current flag."""
-        if isinstance(flag, Flag):
+        if flag is not None:
             flag = str(flag)
         self._flag = Flag(flag)
 
@@ -274,7 +275,7 @@ class SAGA(SagaExecutable):
     def temp_files(self):
         """Lists the temporary files.
 
-        The temporary files are names by their parameter
+        The temporary files are named by their parameter
         name and unix time, separated by an underscore.
         """
         return list(self.temp_dir.iterdir())
@@ -400,27 +401,24 @@ class Tool(SagaExecutable):
     ----------
     library: The SAGA GIS library object.
     tool: The tool name.
-    saga_cmd: The file path to the 'saga_cmd' file. For information
-      on where to find it, check the following link:
-      https://sourceforge.net/projects/saga-gis/files/SAGA%20-%20Documentation/Tutorials/Command_Line_Scripting/.
-    flag: The flag to use when running the command. For more details, check
-      the docstrings for the 'Flag' object in this module.
 
     Attributes
     ----------
     saga_cmd: A 'SAGACMD' object describing the 'saga_cmd' executable.
-      running the command.
     flag: A 'Flag' object describing the flag that will be used when
+      executing the command.
     command: The command that will be executed with the 'execute' method.
     library: The SAGA GIS library object.
     tool: The tool name.
+    parameters: A 'Parameters' object describing the parameters of the tool.
 
     Methods
     -------
     execute: Takes as input keyword arguments which will be
-      used to construct a 'Parameters' object. Example of a keyword
-      argument would be 'elevation=/path/to/raster. To see the command
-      that will be executed, check the 'command' attribute of this class.
+      used to construct a 'Parameters' object and execute the tool.
+      Example of a keyword argument would be 'elevation=/path/to/raster.
+      To see the command that will be executed, check the 'command'
+      attribute of this class.
     """
 
     library: Library
@@ -489,7 +487,11 @@ class Tool(SagaExecutable):
     def __or__(self, tool: Tool) -> Pipeline:
         return Pipeline(self) | (tool)
 
-    def execute(self, **kwargs: SupportsStr) -> ToolOutput:
+    def execute(
+        self,
+        verbose: bool = False,
+        **kwargs: SupportsStr
+    ) -> ToolOutput:
         if kwargs:
             self(**kwargs)
         for param, value in self.parameters.items():
@@ -497,12 +499,48 @@ class Tool(SagaExecutable):
             if value_as_path.parent.exists() and not value_as_path.suffix:
                 value = str(infer_file_extension(value_as_path))
                 self.parameters[param] = value
-        completed_process = self.command.execute()
+        completed_process = self.command.execute(verbose=verbose)
         return ToolOutput(completed_process, self.parameters)
 
 
 @dataclass
 class Pipeline(Executable):
+    """Used to chain tools.
+
+    In order to create a 'Pipeline' object, you must use the truediv
+    operator between two 'Tool' objects or between a 'Pipeline' object and a
+    'Tool' object.
+
+    Parameters
+    ----------
+    tool: The tool object which will initialize the 'Pipeline' object.
+      This corresponds to the first tool that will be ran.
+
+    Attributes
+    ----------
+    tools: A list of the tools in the pipeline.
+
+    Methods
+    ----------
+    execute: Used to execute each tool, one after the other.
+
+    Examples
+    ---------
+    >>> dem = 'path/to/raster.tif'
+    >>> dem_preprocessed = 'path/to/output_raster.tif'
+    >>> saga = SAGA('path/to/saga_cmd')
+    >>> preprocessor = saga / 'ta_preprocessor'
+    >>> route_detection = preprocessor / 'Sink Drainage Route Detection'
+    >>> sink_removal = preprocessor / 'Sink Removal'
+    >>> pipe = (
+    >>>    route_detection(elevation=dem, sinkroute='temp.sdat') |
+    >>>    sink_removal(dem=route_detection.elevation,
+    >>>                 route_detection.sinkroute,
+    >>>                 dem_preproc=dem_preprocessed)
+    >>> )
+    >>> outputs = pipe.execute(verbose=True)
+    """
+
     tools: list[Tool]
 
     def __init__(
@@ -515,7 +553,7 @@ class Pipeline(Executable):
         self.tools.append(tool)
         return self
 
-    def execute(self, verbose=False) -> list[ToolOutput]:
+    def execute(self, verbose: bool = False) -> list[ToolOutput]:
         """Executes the tools in the pipeline.
 
         Args:
@@ -524,22 +562,22 @@ class Pipeline(Executable):
         """
         outputs = []
         for tool in self.tools:
-            output = tool.execute()
-            if verbose:
-                lines = output.text.split('\n')
-                cleaned_lines = [line for line in lines
-                                 if '%' not in line and line]
-                print('\n'.join(cleaned_lines))
+            print(self._format_tool_string(tool))
+            output = tool.execute(verbose=verbose)
             outputs.append(output)
         return outputs
 
-    def __str__(self):
+    @staticmethod
+    def _format_tool_string(tool: Tool):
         string = []
-        for tool in self.tools:
-            string.extend([tool.library, ' ', tool, '\n'])
-            string.extend(['    ', tool.parameters, '\n'])
-            string.extend(['-'*10, '\n'])
-        return ''.join(str(element) for element in string[:-3])
+        string.extend(['-'*25, '\n'])
+        string.extend([str(tool.library), ' ', str(tool), '\n'])
+        string.extend(['    ', str(tool.parameters), '\n'])
+        return ''.join(str(element) for element in string)
+
+    def __str__(self):
+        string = [self._format_tool_string(tool) for tool in self.tools]
+        return ''.join(str(element) for element in string)
 
 
 class PipelineError(Exception):
@@ -559,7 +597,7 @@ class Command:
 
     Attributes
     ----------
-    command: The command to be passed to the 'subprocess.run' function.
+    args: The args to be passed to the 'subprocess.Popen' function.
 
     Methods
     ----------
@@ -581,10 +619,18 @@ class Command:
     def __str__(self):
         return ' '.join(f'"{arg}"' for arg in self.args)
 
-    def execute(self) -> subprocess.CompletedProcess:
-        return (
-            subprocess.run(self.args, capture_output=True, text=True)
-        )
+    def execute(self, verbose: bool = False) -> subprocess.Popen:
+        """Executes the process.
+
+        Args:
+            verbose: This bool should be True only when the args
+              correspond to a tool.
+        """
+        process = subprocess.Popen(self.args, text=True, stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE)
+        if verbose:
+            dynamic_print(process)
+        return process
 
 
 @dataclass
@@ -611,11 +657,12 @@ class Output:
       or a list of them.
     """
 
-    completed_process: subprocess.CompletedProcess
-    text: str = field(init=False)
+    completed_process: subprocess.Popen
+    text: Union[str, None] = field(init=False, default=None)
 
     def __post_init__(self) -> None:
-        self.text = str(self.completed_process.stdout)
+        if self.completed_process.stdout is not None:
+            self.text = self.completed_process.stdout.read()
 
 
 @dataclass
