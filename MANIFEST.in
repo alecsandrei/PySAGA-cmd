@@ -1,3 +1,10 @@
-exclude .data
-exclude .examples
-exclude .assets
+include LICENSE
+include README.md
+
+recursive-exclude PySAGA_cmd/data *
+recursive-exclude PySAGA_cmd/examples *
+recursive-exclude PySAGA_cmd/assets *
+recursive-exclude tests *
+recursive-exclude * __pycache__
+recursive-exclude * *.py[co]
+recursive-exclude * *.ipynb
