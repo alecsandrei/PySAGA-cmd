@@ -55,8 +55,6 @@ build-backend = "setuptools.build_meta"
 [tool]
 
 [tool.setuptools.packages.find]
-where = ["src"]
-exclude = ["data*", "assets*", "examples*", "src.tests*"]
 
 [tool.distutils.bdist_wheel]
 universal = true

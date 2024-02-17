@@ -1,6 +1,7 @@
 include LICENSE
 include README.md
 
+exclude main.py
 recursive-exclude data *
 recursive-exclude examples *
 recursive-exclude assets *
