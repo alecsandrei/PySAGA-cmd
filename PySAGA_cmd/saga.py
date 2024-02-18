@@ -14,6 +14,7 @@ from typing import (
     Iterable,
     Self,
     Any,
+    runtime_checkable,
     TYPE_CHECKING,
 )
 from pathlib import Path
@@ -43,8 +44,6 @@ if TYPE_CHECKING:
     )
 
 
-# TODO: define repr methods for objects
-
 def temp_dir():
     return Path(tempfile.mkdtemp())
 
@@ -52,45 +51,53 @@ def temp_dir():
 PathLike = Union[str, os.PathLike]
 
 
+# TODO: implement some sort of searching for the 'saga_cmd' file.
+
+
+@runtime_checkable
+class SupportsStr(Protocol):
+    def __str__(self) -> str:
+        ...
+
+
 @dataclass
 class SAGACMD:
     """The saga_cmd file object.
 
-    # TODO: implement some sort of searching for the 'saga_cmd' file.
-    If the saga_cmd_path parameter is not provided, a default value
+    If the path parameter is not provided, a default value
     will be set according to the user's platform.
 
     Parameters
     ----------
-    saga_cmd_path: The file path to the 'saga_cmd' file. For information
+    path: The file path to the 'saga_cmd' file. For information
       on where to find it, check the following link:
       https://sourceforge.net/projects/saga-gis/files/SAGA%20-%20Documentation/Tutorials/Command_Line_Scripting/.
 
     Raises
     ----------
-    PathDoesNotExist: If 'saga_cmd_path' does not point to a valid
+    PathDoesNotExist: If 'path' does not point to a valid
       system file or directory.
-    IsADirectoryError: If 'saga_cmd_path' points to a directory
+    IsADirectoryError: If 'path' points to a directory
       instead of a file.
-    FIleNotFoundError: If 'saga_cmd_path' does not point to an existing
+    FIleNotFoundError: If 'path' does not point to an existing
       file
-    SubprocessError: If 'saga_cmd_path' can not be executed.
-    OSError: If 'saga_cmd_path' can not be executed.
+    SubprocessError: If 'path' can not be executed.
+    OSError: If 'path' can not be executed.
     """
 
-    saga_cmd_path: PathLike
+    path: Optional[PathLike] = field(default=None)
 
-    def __init__(self, saga_cmd_path: Optional[PathLike] = None) -> None:
-        if saga_cmd_path is None:
-            saga_cmd_path = get_sagacmd_default()
-        elif not isinstance(saga_cmd_path, Path):
-            saga_cmd_path = Path(saga_cmd_path)
-        self.saga_cmd_path = saga_cmd_path
-        check_is_file(self.saga_cmd_path)
-        check_is_executable(self.saga_cmd_path)
+    def __post_init__(self) -> None:
+        if self.path is None:
+            self.path = get_sagacmd_default()
+        elif not isinstance(self.path, Path):
+            self.path = Path(self.path)
+        check_is_file(self.path)
+        check_is_executable(self.path)
 
     def __str__(self) -> str:
-        return os.fspath(self.saga_cmd_path)
+        assert self.path is not None
+        return os.fspath(self.path)
 
     def __fspath__(self) -> str:
         return str(self)
@@ -148,13 +155,15 @@ class Parameters(dict[str, str]):
     """
 
     def __init__(self, **kwargs: SupportsStr) -> None:
-        super().__init__()
         for param, value in kwargs.items():
-            value = str(value)
-            self[param] = str(value)
+            kwargs[param] = str(value)
+        super().__init__(**kwargs)
 
     def __str__(self) -> str:
         return ' '.join(self.formatted)
+
+    def __repr__(self) -> str:
+        return dict.__repr__(self)
 
     def __getattr__(self, name: str) -> str:
         try:
@@ -179,6 +188,7 @@ class Parameters(dict[str, str]):
         return params
 
 
+@dataclass
 class Executable(ABC):
     """Describes an object that is executable."""
 
@@ -187,10 +197,9 @@ class Executable(ABC):
         """Implements the execution behaviour of the object."""
 
 
+@dataclass
 class SagaExecutable(Executable):
     """Describes an executable inside SAGAGIS."""
-    saga_cmd: SAGACMD
-    _flag: Flag
 
     @property
     @abstractmethod
@@ -226,8 +235,6 @@ class SAGA(SagaExecutable):
     saga_cmd: The file path to the 'saga_cmd' file or a SAGACMD object.
     For information on where to find it, check the following link:
       https://sourceforge.net/projects/saga-gis/files/SAGA%20-%20Documentation/Tutorials/Command_Line_Scripting/.
-    flag: The flag to use when running the command. For more details, check
-      the docstrings for the 'Flag' object in this module.
 
     Attributes
     ----------
@@ -249,17 +256,12 @@ class SAGA(SagaExecutable):
     temp_dir_cleanup: Deletes the temporary directory.
     """
 
-    def __init__(
-        self,
-        saga_cmd: Optional[Union[PathLike, SAGACMD]] = None,
-        flag: Optional[Union[str, Flag]] = None
-    ) -> None:
-        if not isinstance(saga_cmd, SAGACMD):
-            saga_cmd = SAGACMD(saga_cmd)
-        if not isinstance(flag, Flag):
-            flag = Flag(flag)
-        self.saga_cmd = saga_cmd
-        self._flag = flag
+    saga_cmd: Optional[Union[PathLike, SAGACMD]] = field(default=None)
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.saga_cmd, SAGACMD):
+            self.saga_cmd = SAGACMD(self.saga_cmd)
+        self._flag = Flag()
         self._temp_dir = temp_dir()
 
     def __truediv__(self, library: Union[Library, SupportsStr]):
@@ -293,6 +295,7 @@ class SAGA(SagaExecutable):
 
     @property
     def command(self) -> Command:
+        assert isinstance(self.saga_cmd, SupportsStr)
         return Command(self.saga_cmd, self.flag)
 
     def get_library(self, library: str) -> Library:
@@ -339,7 +342,6 @@ class Library(SagaExecutable):
     Attributes
     ----------
     saga: The 'SAGA' object used to access this library.
-    saga_cmd: A 'SAGACMD' object describing the 'saga_cmd' executable.
     flag: A 'Flag' object describing the flag that will be used when
       executing the command.
     command: The command that will be executed with the 'execute' method.
@@ -356,15 +358,8 @@ class Library(SagaExecutable):
     saga: SAGA
     library: str
 
-    def __init__(
-        self,
-        saga: SAGA,
-        library: str,
-    ) -> None:
-        self.saga = saga
-        self.saga_cmd = self.saga.saga_cmd
+    def __post_init__(self) -> None:
         self._flag = self.saga.flag
-        self.library = library
 
     def __str__(self):
         return self.library
@@ -376,7 +371,8 @@ class Library(SagaExecutable):
 
     @property
     def command(self) -> Command:
-        return Command(self.saga_cmd, self.flag, self.library)
+        assert isinstance(self.saga.saga_cmd, SupportsStr)
+        return Command(self.saga.saga_cmd, self.flag, self.library)
 
     def get_tool(self, tool: str) -> Tool:
         """Get a SAGA GIS Tool object.
@@ -425,18 +421,10 @@ class Tool(SagaExecutable):
 
     library: Library
     tool: str
-    parameters: Parameters
+    parameters: Parameters = field(default_factory=Parameters)
 
-    def __init__(
-        self,
-        library: Library,
-        tool: str,
-    ) -> None:
-        self.library = library
-        self.saga = self.library.saga
-        self.saga_cmd = self.saga.saga_cmd
+    def __post_init__(self) -> None:
         self._flag = self.library.flag
-        self.tool = tool
         self.parameters = Parameters()
 
     def __str__(self):
@@ -478,8 +466,9 @@ class Tool(SagaExecutable):
 
     @property
     def command(self) -> Command:
+        assert isinstance(self.library.saga.saga_cmd, SupportsStr)
         return (
-            Command(self.saga_cmd,
+            Command(self.library.saga.saga_cmd,
                     self.flag,
                     self.library,
                     self.tool,
@@ -586,11 +575,6 @@ class PipelineError(Exception):
     def __init__(self, message: str):
         self.message = message
         super().__init__(self.message)
-
-
-class SupportsStr(Protocol):
-    def __str__(self) -> str:
-        ...
 
 
 @dataclass

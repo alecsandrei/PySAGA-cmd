@@ -1,5 +1,6 @@
-from PySAGA_cmd.saga import SAGA
 import matplotlib.pyplot as plt
+
+from PySAGA_cmd.saga import SAGA
 
 
 def main():

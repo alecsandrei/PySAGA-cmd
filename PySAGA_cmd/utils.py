@@ -106,15 +106,6 @@ def print_end(string: str):
     return '\r'
 
 
-def remove_unwanted_characters(string: str):
-    unwanted_chars = '#_'
-    return (
-        ''
-        .join(char for char in string if char not in unwanted_chars)
-        .strip()
-    )
-
-
 class NotExecutableError(Exception):
     """Raised when a system file can not be executed."""
     def __init__(self, message: str):
