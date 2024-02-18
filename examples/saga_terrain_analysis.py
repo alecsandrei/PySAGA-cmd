@@ -299,6 +299,6 @@ class TerrainAnalysis(Executable):
 
 if __name__ == '__main__':
     saga_cmd = Path('/usr/local/bin/saga_cmd')
-    sample_dem = Path('./example_data/DEM_30m.tif')
+    sample_dem = Path('../data/example_input/DEM_30m.tif')
     analysis = TerrainAnalysis(saga_cmd, sample_dem)
     analysis.execute(concurrency=False)
