@@ -13,15 +13,9 @@ from PySAGA_cmd.saga import (
 class TerrainAnalysis(Executable):
     """This class can be used to calculate terrain analysis grids."""
 
-    def execute(self, concurrency: bool = True):
-        def _execute(tool: Callable):
+    def execute(self):
+        for tool in self.tools:
             tool()
-        if concurrency:
-            with concurrent.futures.ThreadPoolExecutor() as executor:
-                executor.map(_execute, self.tools)
-        else:
-            for tool in self.tools:
-                tool()
 
     @property
     def morphometry(self) -> Library:
@@ -301,4 +295,4 @@ if __name__ == '__main__':
     saga_cmd = Path('/usr/local/bin/saga_cmd')
     sample_dem = Path('../data/example_input/DEM_30m.tif')
     analysis = TerrainAnalysis(saga_cmd, sample_dem)
-    analysis.execute(concurrency=False)
+    analysis.execute()
