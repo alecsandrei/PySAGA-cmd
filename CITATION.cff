@@ -1,8 +1,8 @@
 cff-version: 1.1.0
 message: "If you use this software, please cite it as below."
 author:
-- family-name: Cuvuliuc
-  given-name: Alex-Andrei
+- family-names: Cuvuliuc
+  given-names: Alex-Andrei
 title:alecsandrei/PySAGA-cmd: v1.0.6
 version: v1.0.6
 date-released: 2024-02-17
