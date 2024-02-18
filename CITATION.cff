@@ -3,6 +3,6 @@ message: "If you use this software, please cite it as below."
 author:
 - family-name: Cuvuliuc
   given-name: Alex-Andrei
-title:alecsandrei/PySAGA-cmd: v1.0.5
-version: v1.0.5
+title:alecsandrei/PySAGA-cmd: v1.0.6
+version: v1.0.6
 date-released: 2024-02-17
