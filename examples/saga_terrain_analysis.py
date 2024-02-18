@@ -1,6 +1,5 @@
 from pathlib import Path
 from typing import Callable
-import concurrent.futures
 
 from PySAGA_cmd.saga import (
     SAGA,
