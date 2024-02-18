@@ -14,7 +14,9 @@ pip install PySAGA-cmd[extras]
 
 ### Choosing tools
 
-Before you can use this package, you need to locate the **saga_cmd** in your system. For linux, it can be found somewhere in the `/usr/bin/` structure. For Windows, it is usually located in `C:\Program Files\SAGA`.
+Before you can use this package, you need to locate the **saga_cmd** in your system. For linux, it can be found somewhere in the `/usr/bin/` directory. For Windows, it is usually located in `C:\Program Files\SAGA`.
+
+Accesing tools can be done with the **truediv** operator (the forward slash **/**), like in the example below.
 
 ```python
 from PySAGA_cmd import SAGA
@@ -33,7 +35,7 @@ flow_accumulation = saga / 'ta_hydrology' / 'Flow Accumulation (Parallelizable)'
 
 ### Executing
 
-Executing an executable object is straight forward. For tools, just provide the required keyword arguments to the *execute* method.
+Executing an object is straight forward and is done using the **execute** method. For the SAGA and Library objects no keyword arguments are required. For tools, just provide the required keyword arguments.
 
 ```python
 # Executing the SAGA object. Useful when you want to see the available libraries.
@@ -53,7 +55,7 @@ print(output.text)
 
 ### Using flags
 
-You can provide flags for SAGA, Library and Tool objects. To see what kind of flags we can use, we can look at the output of the following.
+You can provide flags for SAGA, Library and Tool objects. To see what kind of flags can be used, look at the output of the following.
 
 ```python
 saga.flag = 'help'
@@ -62,7 +64,7 @@ print(saga.execute().text)
 
 ### Chaining commands
 
-Chaining commands can be done with **PySAGA-cmd** with the truediv operator. Consider the following example where the goal is to get a hydrologically preprocessed DEM and use that as input for the *Flow Accumulation (Parallelizable)* tool.
+Chaining commands can be done with **PySAGA-cmd** with the **or** operator (the vertical line **|**). Consider the following example where the goal is to get a hydrologically preprocessed DEM and use that as input for the *Flow Accumulation (Parallelizable)* tool.
 
 ```python
 pipe = (
@@ -75,7 +77,7 @@ pipe = (
 outputs = pipe.execute(verbose=True)
 ```
 
-Notice the use of the truediv operator. Also, notice how we can create temporary intermediate files by using **temp** as the path. This is useful because we didn't care about the sinkroute and dem_preproc grids and we didn't want to save them, we only wanted to use them as input for other tools.
+Notice the use of the **or** operator operator. Also, notice how we can create temporary intermediate files by using **temp** as the path. This is useful because we didn't care about the sinkroute and dem_preproc grids and we didn't want to save them, we only wanted to use them as input for other tools.
 
 To visualize the temporary files, access the **temp_files** attribute of SAGA.
 
@@ -141,17 +143,15 @@ elevation.hist(ax=ax3, **hist_kwargs)
 slope.hist(ax=ax4, **hist_kwargs)
  
 plt.tight_layout()
+
+saga.temp_dir_cleanup()
 ```
 <img src="https://github.com/alecsandrei/PySAGA-cmd/blob/master/assets/plot1.png?raw=true" />
 
 For extra information on how to use the package, you can also look at the [notebooks](https://github.com/alecsandrei/PySAGA-cmd/tree/master/examples/notebooks) inside the examples folder on the Github page.
 
 
-# TODO before the launch of v1.0.0.
+# TODOs
 
-- [x] Remove all dependencies. All the dependencies will be turned into extra dependencies. Switch from attrs to dataclasses.
-- [x] Write simple tests.
-- [x] Add a Pipeline object.
-- [x] Use a tool like zest.releaser to release v1.0.0.
-- [x] Update notebook examples with new API and README.md.
-- [x] Make objects more pythonic.
+- [ ] Implement recursive search for the saga_cmd file.
+- [ ] Improve the verbose behaviour of tool execution.
