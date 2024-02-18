@@ -1,8 +1,10 @@
-cff-version: 1.1.0
+cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
-author:
-- family-names: Cuvuliuc
-  given-names: Alex-Andrei
-title:alecsandrei/PySAGA-cmd: v1.0.6
-version: v1.0.6
-date-released: 2024-02-17
+authors:
+- family-names: "Cuvuliuc"
+  given-names: "Alex-Andrei"
+  orcid: "https://orcid.org/0009-0004-7575-2036"
+title: "PySAGA-cmd"
+version: 1.0.6
+date-released: 2024-02-18
+url: "https://github.com/alecsandrei/PySAGA-cmd"
