@@ -130,6 +130,10 @@ class Flag:
         return str(self) == other
 
 
+# TODO: Switch inheritance from dict to UserDict
+# read Fluent Python pg 490-493 for details
+
+
 @dataclass
 class Parameters(dict[str, str]):
     """The SAGA GIS tool parameters.
