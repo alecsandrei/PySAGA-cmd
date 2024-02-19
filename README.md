@@ -130,7 +130,7 @@ ax4 = fig.add_subplot(gs[3])
 elevation.plot(ax=ax1, cmap='terrain', cbar_kwargs=dict(label='Elevation (meters)'))
 slope.plot(ax=ax2, cmap='rainbow', cbar_kwargs=dict(label='Radians'))
 shading.plot(ax=ax1, cbar=False, alpha=0.45)
-ax1.set_title('Elevation map (hydrologically preprocessed)')
+ax1.set_title('Elevation map')
 ax2.set_title('Slope map')
  
 # Histograms
