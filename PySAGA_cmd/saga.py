@@ -502,7 +502,7 @@ class Tool(SagaExecutable):
 class Pipeline(Executable):
     """Used to chain tools.
 
-    In order to create a 'Pipeline' object, you must use the truediv
+    In order to create a 'Pipeline' object, you must use the 'or'
     operator between two 'Tool' objects or between a 'Pipeline' object and a
     'Tool' object.
 
