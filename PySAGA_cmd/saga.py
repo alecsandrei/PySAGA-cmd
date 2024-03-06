@@ -12,7 +12,7 @@ from typing import (
     Protocol,
     Sequence,
     Iterable,
-    Self,
+    TypeVar,
     Any,
     runtime_checkable,
     TYPE_CHECKING,
@@ -395,9 +395,12 @@ class Library(SagaExecutable):
         return Output(self.command.execute())
 
 
+TTool = TypeVar("TTool", bound='Tool')
+
+
 @dataclass
 class Tool(SagaExecutable):
-    """Describes a SAGA GIS tool.f
+    """Describes a SAGA GIS tool.
 
     Parameters
     ----------
@@ -434,7 +437,7 @@ class Tool(SagaExecutable):
     def __str__(self):
         return self.tool
 
-    def __call__(self, **kwargs: SupportsStr) -> Self:
+    def __call__(self: TTool, **kwargs: SupportsStr) -> TTool:
         """Uses keyword argument to define the tool parameters."""
         if self.parameters:
             self._del_attr_params()
@@ -498,6 +501,9 @@ class Tool(SagaExecutable):
         return ToolOutput(completed_process, self.parameters)
 
 
+TPipeline = TypeVar("TPipeline", bound='Pipeline')
+
+
 @dataclass
 class Pipeline(Executable):
     """Used to chain tools.
@@ -544,7 +550,7 @@ class Pipeline(Executable):
     ):
         self.tools = [tool]
 
-    def __or__(self, tool: Tool) -> Self:
+    def __or__(self: TPipeline, tool: Tool) -> TPipeline:
         self.tools.append(tool)
         return self
 
