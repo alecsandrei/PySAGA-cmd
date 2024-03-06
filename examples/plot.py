@@ -11,8 +11,8 @@ if __name__ == '__main__':
     here = Path(__file__)
     os.chdir(here.parent)
 
-    dem = Path('../data/example_input/DEM_30m.tif')
-    saga = SAGA('/usr/local/bin/saga_cmd')
+    dem = Path(__file__).parent / '../data/example_input/DEM_30m.tif'
+    saga = SAGA('/usr/bin/saga_cmd')
 
     # Defining tools.
     slope_aspect_curvature = saga / 'ta_morphometry' / 0  # We can also use tool indices to access tools.

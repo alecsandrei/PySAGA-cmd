@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import matplotlib.pyplot as plt
 
 from PySAGA_cmd.saga import SAGA
@@ -6,14 +8,12 @@ from PySAGA_cmd.saga import SAGA
 def main():
     saga = SAGA(saga_cmd='/usr/bin/saga_cmd')
 
-    print(saga)
-
     # Defining objects.
     # In general, it's good behaviour to specify file extension.
     # So please, do specify them for output objects (youc can even
     # do it for 'temp'!)
-    dem = './data/example_input/DEM_30m.tif'
-    output = './data/example_output/flow_accumulation.sdat'
+    dem = Path(__file__).parent / 'data/example_input/DEM_30m.tif'
+    output = Path(__file__).parent / 'data/example_output/flow_accumulation.sdat'
 
     # Defining libraries
     preprocessor = saga / 'ta_preprocessor'
@@ -33,6 +33,7 @@ def main():
         flow_accumulation(dem=sink_removal.dem_preproc, flow=output)
     )
     outputs = pipe.execute(verbose=True)
+
     # If you also install the extra dependencies, the following lines
     # of code are available and you can plot your output rasters.
     rasters = outputs[-1].get_raster('flow')
