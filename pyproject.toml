@@ -1,6 +1,6 @@
 [project]
 name = "PySAGA-cmd"
-version = "1.0.8"
+version = "1.0.9.dev0"
 dynamic = [
     "dependencies",
 ]
