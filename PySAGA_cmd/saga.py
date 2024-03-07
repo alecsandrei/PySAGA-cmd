@@ -38,7 +38,7 @@ from PySAGA_cmd.utils import (
 
 
 if TYPE_CHECKING:
-    from objects import (  # type: ignore
+    from .objects import (  # type: ignore
         Raster,
         Vector
     )
