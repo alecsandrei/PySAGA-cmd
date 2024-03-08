@@ -173,8 +173,7 @@ class SAGACMDSearcher:
             Path('C:/OSGeo4W64'),
         )
         file_name = 'saga_cmd.exe'
-        if (path := self._search_file(dirs, file_name)) is not None and \
-            check_is_executable(path):
+        if (path := self._search_file(dirs, file_name)) is not None:
             return path
 
     def _search_linux(self) -> Union[Path, None]:  # type: ignore
@@ -189,8 +188,7 @@ class SAGACMDSearcher:
             return file_name_path
         except:
             pass
-        if (path := self._search_file(dirs, file_name)) is not None and \
-            check_is_executable(path):
+        if (path := self._search_file(dirs, file_name)) is not None:
             return path
 
     @staticmethod
@@ -199,4 +197,9 @@ class SAGACMDSearcher:
         for dir_ in dirs:
             for cur_path, _, files in os.walk(dir_):
                 if file_name in files:
-                    return dir_ / cur_path / file_name
+                    path = dir_ / cur_path / file_name
+                    try:
+                        check_is_executable(path)
+                        return path
+                    except:
+                        continue
