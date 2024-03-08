@@ -150,8 +150,8 @@ class SAGACMDSearcher:
             return self._search_linux()
         elif USER_PLATFORM == Platforms.WINDOWS:
             return self._search_windows()
-        elif USER_PLATFORM == Platforms.LINUX:
-            return self._search_linux()
+        elif USER_PLATFORM == Platforms.MAC_OS:
+            return self._search_mac_os()
 
     def _search_mac_os(self):
         dirs = (
