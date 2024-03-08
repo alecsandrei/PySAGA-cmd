@@ -75,12 +75,6 @@ class SAGACMD:
 
     Raises
     ----------
-    PathDoesNotExist: If 'path' does not point to a valid
-      system file or directory.
-    IsADirectoryError: If 'path' points to a directory
-      instead of a file.
-    FIleNotFoundError: If 'path' does not point to an existing
-      file
     SubprocessError: If 'path' can not be executed.
     OSError: If 'path' can not be executed.
     """
