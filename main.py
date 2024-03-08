@@ -6,7 +6,7 @@ from PySAGA_cmd.saga import SAGA
 
 
 def main():
-    saga = SAGA(saga_cmd='/usr/bin/saga_cmd')
+    saga = SAGA()
 
     # Defining objects.
     # In general, it's good behaviour to specify file extension.

@@ -2,9 +2,37 @@
 
 from __future__ import annotations
 
+import os
 import sys
 import subprocess
+from typing import (
+    Union,
+    Iterable
+)
 from pathlib import Path
+from enum import (
+    Enum,
+    auto
+)
+
+
+class Platforms(Enum):
+    WINDOWS = auto()
+    LINUX = auto()
+    MAC_OS = auto()
+
+
+def get_user_platform():
+    platform = sys.platform
+    if platform == 'win32':
+        return Platforms.WINDOWS
+    elif platform.startswith('linux'):
+        return Platforms.LINUX
+    elif platform == 'darwin':
+        return Platforms.MAC_OS
+
+
+USER_PLATFORM = get_user_platform()
 
 
 def check_is_file(path: Path) -> None:
@@ -26,14 +54,15 @@ def check_is_file(path: Path) -> None:
         )
 
 
-def check_is_executable(path: Path) -> None:
+def check_is_executable(path: Path) -> bool:
     """Checks if an input file is executable.
 
-    If path points to an executable, returns None and does not raise any errors.
+    If path points to an executable, returns True and no errors are raised.
     """
     message = f'The file at path {path} is not an executable.'
     try:
         _ = subprocess.run(path, check=False, capture_output=True)
+        return True
     except subprocess.SubprocessError as e:
         raise NotExecutableError(message) from e
     except OSError as e:
@@ -41,19 +70,11 @@ def check_is_executable(path: Path) -> None:
 
 
 def get_sagacmd_default() -> Path:
-    """Returns the default path of the saga_cmd file.
-
-    A path is only returned if the operating system
-    is either Linux or Windows. Otherwise, an error
-    is raised.
-    """
-    if sys.platform.startswith('linux'):
-        return Path('/usr/bin/saga_cmd')
-    if sys.platform.startswith('win'):
-        return Path(r'C:\Program Files\SAGA\saga_cmd.exe')
-    raise OSError(
-        'SAGA GIS is not available for your OS.'
-    )
+    """Returns the default path of the saga_cmd file."""
+    saga_cmd = SAGACMDSearcher().search_saga_cmd()
+    if saga_cmd is None:
+        raise FileNotFoundError('Could not find saga_cmd.')
+    return saga_cmd
 
 
 def infer_file_extension(path_to_file: Path) -> Path:
@@ -116,3 +137,71 @@ class PathDoesNotExist(Exception):
     """Raised when a given path does not exist."""
     def __init__(self, message: str):
         self.message = message
+
+
+class SAGACMDSearcher:
+    """Implements the searching behaviour for saga_cmd.
+    
+    Inspired by the 'Rsagacmd' R package implementation.
+    """
+
+    def search_saga_cmd(self):
+        if USER_PLATFORM == Platforms.LINUX:
+            return self._search_linux()
+        elif USER_PLATFORM == Platforms.WINDOWS:
+            return self._search_windows()
+        elif USER_PLATFORM == Platforms.LINUX:
+            return self._search_linux()
+
+    def _search_mac_os(self):
+        dirs = (
+            Path('/Applications/SAGA.app/Contents/MacOS'),
+            Path('/usr/local/bin'),
+            Path('/Applications/QGIS.app/Contents/MacOS/bin')
+        )
+        file_name = 'saga_cmd'
+        if (path := self._search_file(dirs, file_name)) is not None and \
+            check_is_executable(path):
+            return path
+
+    def _search_windows(self):
+        dirs = (
+            Path('C:/Program Files/SAGA-GIS'),
+            Path('C:/Program Files (x86)/SAGA-GIS'),
+            Path('C:/SAGA-GIS'),
+            Path('C:/OSGeo4W'),
+            Path('C:/OSGeo4W64'),
+        )
+        file_name = 'saga_cmd.exe'
+        if (path := self._search_file(dirs, file_name)) is not None and \
+            check_is_executable(path):
+            return path
+
+    def _search_linux(self) -> Union[Path, None]:  # type: ignore
+        dirs = (
+            Path('/usr'),
+        )
+        file_name = 'saga_cmd'
+        # Check if saga_cmd is in path.
+        try:
+            file_name_path = Path(file_name)
+            check_is_executable(file_name_path)
+            return file_name_path
+        except:
+            pass
+        if (path := self._search_file(dirs, file_name)) is not None and \
+            check_is_executable(path):
+            return path
+
+    @staticmethod
+    def _search_file(dirs: Iterable[Path], file_name: str) -> Union[Path, None]:  # type: ignore
+        assert all(dir_.is_dir() for dir_ in dirs)
+        for dir_ in dirs:
+            for cur_path, _, files in os.walk(dir_):
+                if file_name in files:
+                    return dir_ / cur_path / file_name
+
+
+if __name__ == '__main__':
+    searcher = SAGACMDSearcher()
+    print(searcher.search_saga_cmd())

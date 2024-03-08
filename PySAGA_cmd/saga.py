@@ -89,10 +89,14 @@ class SAGACMD:
 
     def __post_init__(self) -> None:
         if self.path is None:
+            print(
+                'Path to "saga_cmd" was not provided.',
+                'Attempting to find it.'
+            )
             self.path = get_sagacmd_default()
+            print(f'saga_cmd found at "{self.path}".')
         elif not isinstance(self.path, Path):
             self.path = Path(self.path)
-        check_is_file(self.path)
         check_is_executable(self.path)
 
     def __str__(self) -> str:
