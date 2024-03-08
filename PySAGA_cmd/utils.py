@@ -200,8 +200,3 @@ class SAGACMDSearcher:
             for cur_path, _, files in os.walk(dir_):
                 if file_name in files:
                     return dir_ / cur_path / file_name
-
-
-if __name__ == '__main__':
-    searcher = SAGACMDSearcher()
-    print(searcher.search_saga_cmd())
