@@ -54,7 +54,7 @@ build-backend = "setuptools.build_meta"
 [tool]
 
 [tool.setuptools.packages.find]
-exclude = ["assets", "data", "data.*", "dist", "examples", "examples.*"]
+exclude = ["data", "data.*", "dist", "examples", "examples.*"]
 
 [tool.zest-releaser]
 python-file-with-version = "PySAGA_cmd/__init__.py"

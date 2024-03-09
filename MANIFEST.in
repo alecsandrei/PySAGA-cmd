@@ -5,7 +5,6 @@ include *.cff
 exclude main.py
 recursive-exclude data *
 recursive-exclude examples *
-recursive-exclude assets *
 recursive-exclude PySAGA_cmd/tests *
 recursive-exclude * *.png
 recursive-exclude * __pycache__

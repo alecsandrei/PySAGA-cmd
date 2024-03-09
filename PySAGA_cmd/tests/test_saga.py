@@ -131,12 +131,12 @@ class TestPipeline:
         flow_accumulation = 'temp'
         pipe = (
             sink_drainage_route_detection(elevation=dem, sinkroute=sinkroute) |
-            (sink_removal(dem=sink_drainage_route_detection.elevation,
-                          sinkroute=sink_drainage_route_detection.sinkroute,
-                          dem_preproc=dem_preproc)) |
-            (flow_accumulation_parallelizable(
+            sink_removal(dem=sink_drainage_route_detection.elevation,
+                         sinkroute=sink_drainage_route_detection.sinkroute,
+                         dem_preproc=dem_preproc) |
+            flow_accumulation_parallelizable(
                 dem=sink_removal.dem_preproc,
-                flow_accumulation=flow_accumulation))
+                flow_accumulation=flow_accumulation)
         )
         assert pipe
 
@@ -144,4 +144,5 @@ class TestPipeline:
 class TestExecution:
 
     def test_tool_execution(self):
+        # TODO: write test.
         pass
