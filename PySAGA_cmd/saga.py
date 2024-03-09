@@ -13,6 +13,7 @@ from typing import (
     Sequence,
     Iterable,
     TypeVar,
+    overload,
     Any,
     runtime_checkable,
     TYPE_CHECKING,
@@ -29,9 +30,8 @@ from dataclasses import (
 )
 
 from PySAGA_cmd.utils import (
-    check_is_file,
     check_is_executable,
-    get_sagacmd_default,
+    search_saga_cmd,
     infer_file_extension,
     dynamic_print,
 )
@@ -49,9 +49,6 @@ def temp_dir():
 
 
 PathLike = Union[str, os.PathLike]
-
-
-# TODO: implement some sort of searching for the 'saga_cmd' file.
 
 
 @runtime_checkable
@@ -87,7 +84,7 @@ class SAGACMD:
                 'Path to "saga_cmd" was not provided.',
                 'Attempting to find it.'
             )
-            self.path = get_sagacmd_default()
+            self.path = search_saga_cmd()
             print(f'saga_cmd found at "{self.path}".')
         elif not isinstance(self.path, Path):
             self.path = Path(self.path)
@@ -663,29 +660,53 @@ class Output:
 class ToolOutput(Output):
     parameters: Parameters = field(default_factory=Parameters)
 
+    @overload
+    def get_raster(  # type: ignore
+        self,
+        parameters: str
+    ) -> Raster: ...
+
+    @overload
     def get_raster(
         self,
-        parameters: Union[Sequence[str], str]
-    ) -> list[Raster]:
+        parameters: Sequence[str]
+    ) -> list[Raster]: ...
+
+    def get_raster(
+        self,
+        parameters: Union[str, Sequence[str]]
+    ) -> Union[Raster, list[Raster]]:
 
         from .objects import Raster
 
         if isinstance(parameters, str):
-            parameters = [parameters]
+            return Raster(self.parameters[parameters])
         return (
             [Raster(v) for k, v in self.parameters.items()
              if k in parameters]
         )
 
+    @overload
+    def get_vector(  # type: ignore
+        self,
+        parameters: str
+    ) -> Vector: ...
+
+    @overload
+    def get_vector(
+        self,
+        parameters: Sequence[str]
+    ) -> list[Vector]: ...
+
     def get_vector(
         self,
         parameters: Union[Sequence[str], str]
-    ) -> list[Vector]:
+    ) -> Union[list[Vector], Vector]:
 
         from .objects import Vector
 
         if isinstance(parameters, str):
-            parameters = [parameters]
+            return Vector(self.parameters[parameters])
         return (
             [Vector(v) for k, v in self.parameters.items()
              if k in parameters]

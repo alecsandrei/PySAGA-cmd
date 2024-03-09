@@ -36,7 +36,7 @@ PathLike = Union[str, os.PathLike]
 
 @dataclass
 class Raster:
-    """A raster image object.
+    """A raster object.
 
     Parameters
     ----------

@@ -1,7 +1,5 @@
-import sys
 from pathlib import Path
-
-import pytest
+from functools import cached_property
 
 from PySAGA_cmd.saga import (
     SAGA,
@@ -11,39 +9,23 @@ from PySAGA_cmd.saga import (
 )
 
 
-def dummy_executable(tmp_path: Path):
-    text = dummy_executable.__name__
-    if sys.platform.startswith('win'):
-        tmp_file = tmp_path / ''.join([text, '.bat'])
-        tmp_file.write_text(data='@echo off')
-    elif sys.platform.startswith('linux'):
-        text = dummy_executable.__name__
-        tmp_file = tmp_path / ''.join([text, '.sh'])
-        tmp_file.write_text(data='#!/bin/sh')
-        tmp_file.chmod(tmp_file.stat().st_mode | 0o755)
-    return tmp_file
+# In order to run the tests, saga_cmd needs to be found.
+SAGA_ = SAGA()
 
 
 class TestSaga:
 
-    @pytest.fixture(autouse=True)
-    def setup(self, tmp_path):
-        self.dummy_executable = dummy_executable(tmp_path)
-
-    def get_saga(self):
-        return SAGA(saga_cmd=self.dummy_executable)
-
     def test_get_library(self):
         library = 'ta_morphometry'
-        lib = self.get_saga().get_library(library=library)
-        command = ' '.join([f'"{self.dummy_executable}"', f'"{library}"'])
+        lib = SAGA_.get_library(library=library)
+        command = ' '.join([f'"{SAGA_.saga_cmd}"', f'"{library}"'])
         assert str(lib.command) == command
 
     def test_get_library_div(self):
         lib_name = 'ta_morphometry'
-        library_div = self.get_saga() / lib_name
+        library_div = SAGA_ / lib_name
         command = ' '.join(
-            [f'"{self.dummy_executable}"',
+            [f'"{SAGA_.saga_cmd}"',
              f'"{lib_name}"']
         )
         assert str(library_div.command) == command
@@ -51,9 +33,9 @@ class TestSaga:
     def test_get_tool(self):
         lib_name = 'ta_morphometry'
         tool_name = '0'
-        tool = self.get_saga().get_tool(library=lib_name, tool=tool_name)
+        tool = SAGA_.get_tool(library=lib_name, tool=tool_name)
         command = ' '.join(
-            [f'"{self.dummy_executable}"',
+            [f'"{SAGA_.saga_cmd}"',
              f'"{lib_name}"',
              f'"{tool_name}"']
         )
@@ -62,9 +44,9 @@ class TestSaga:
     def test_get_tool_div(self):
         lib_name = 'ta_morphometry'
         tool_name = '0'
-        tool_div = self.get_saga() / lib_name / tool_name
+        tool_div = SAGA_ / lib_name / tool_name
         command = ' '.join(
-            [f'"{self.dummy_executable}"',
+            [f'"{SAGA_.saga_cmd}"',
              f'"{lib_name}"',
              f'"{tool_name}"']
         )
@@ -73,7 +55,7 @@ class TestSaga:
     def test_flag(self):
         lib_name = 'ta_morphometry'
         tool_name = '0'
-        tool = self.get_saga().get_tool(library=lib_name, tool=tool_name)
+        tool = SAGA_.get_tool(library=lib_name, tool=tool_name)
         flag = '--cores=8'
         tool.flag = flag
         assert tool.flag == flag
@@ -87,33 +69,24 @@ class TestSaga:
 
 class TestLibrary:
 
-    @pytest.fixture(autouse=True)
-    def setup(self, tmp_path):
-        self.dummy_executable = dummy_executable(tmp_path)
-
     def test_initialize(self):
         name = 'ta_morphometry'
-        saga = SAGA(self.dummy_executable)
-        saga.flag = '--help'
+        SAGA_.flag = '--help'
         lib = Library(
-            saga=saga,
+            saga=SAGA_,
             library=name,
         )
         assert lib
         assert lib.flag == '--help'
 
 
+
 class TestTool:
 
-    @pytest.fixture(autouse=True)
-    def setup(self, tmp_path):
-        self.dummy_executable = dummy_executable(tmp_path)
-
-    def test_initialize(self):
-        saga = SAGA(self.dummy_executable)
+    def test_initalize(self):
         lib_name = 'ta_morphometry'
         tool_name = '0'
-        lib = Library(saga=saga, library=lib_name)
+        lib = Library(saga=SAGA_, library=lib_name)
         lib.flag = '--help'
         tool = Tool(
             library=lib,
@@ -147,16 +120,11 @@ class TestParameters:
 
 class TestPipeline:
 
-    @pytest.fixture(autouse=True)
-    def setup(self, tmp_path):
-        self.dummy_executable = dummy_executable(tmp_path)
-
     def test_pipeline(self):
-        saga = SAGA(saga_cmd=self.dummy_executable)
-        preprocessor = saga / 'ta_preprocessor'
+        preprocessor = SAGA_ / 'ta_preprocessor'
         sink_drainage_route_detection = preprocessor / '1'
         sink_removal = preprocessor / '2'
-        flow_accumulation_parallelizable = saga / 'ta_hydrology' / '29'
+        flow_accumulation_parallelizable = SAGA_ / 'ta_hydrology' / '29'
         dem = 'temp'
         sinkroute = 'temp'
         dem_preproc = 'temp'
@@ -171,3 +139,9 @@ class TestPipeline:
                 flow_accumulation=flow_accumulation))
         )
         assert pipe
+
+
+class TestExecution:
+
+    def test_tool_execution(self):
+        pass

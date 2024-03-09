@@ -20,6 +20,7 @@ Accesing tools can be done with the **truediv** operator (the forward slash **/*
 
 ```python
 from PySAGA_cmd import SAGA
+from PySAGA_cmd.utils import get_sample_dem
 
 
 saga = SAGA('/usr/bin/saga_cmd')
@@ -47,7 +48,7 @@ preprocessor_output = preprocessor.execute()
 print(preprocessor_output.text)
 
 # Executing a Tool object.
-dem = './data/example_input/DEM_30m.tif'
+dem = get_sample_dem()
 output = 'path/to/output.sdat'
 output = route_detection.execute(verbose=True, elevation=dem, sinkroute=output)
 print(output.text)

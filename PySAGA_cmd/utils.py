@@ -7,13 +7,17 @@ import sys
 import subprocess
 from typing import (
     Union,
-    Iterable
+    Iterable,
+    Literal
 )
 from pathlib import Path
 from enum import (
     Enum,
     auto
 )
+
+
+HERE = Path(__file__).parent
 
 
 class Platforms(Enum):
@@ -69,8 +73,8 @@ def check_is_executable(path: Path) -> bool:
         raise NotExecutableError(message) from e
 
 
-def get_sagacmd_default() -> Path:
-    """Returns the default path of the saga_cmd file."""
+def search_saga_cmd() -> Path:
+    """Searches for the saga_cmd executable."""
     saga_cmd = SAGACMDSearcher().search_saga_cmd()
     if saga_cmd is None:
         raise FileNotFoundError('Could not find saga_cmd.')
@@ -120,7 +124,7 @@ def dynamic_print(popen: subprocess.Popen[str]):
     return popen.poll()
 
 
-def print_end(string: str):
+def print_end(string: str) -> Literal['\n', '\r']:
     """The 'end' parameter is a newline or a carriage return character."""
     if '100' in string or any(char.isalpha() for char in string):
         return '\n'
@@ -129,14 +133,17 @@ def print_end(string: str):
 
 class NotExecutableError(Exception):
     """Raised when a system file can not be executed."""
-    def __init__(self, message: str):
+    def __init__(self, message: str) -> None:
         self.message = message
 
 
 class PathDoesNotExist(Exception):
     """Raised when a given path does not exist."""
-    def __init__(self, message: str):
+    def __init__(self, message: str) -> None:
         self.message = message
+
+
+PathLike = Union[str, os.PathLike]
 
 
 class SAGACMDSearcher:
@@ -145,32 +152,34 @@ class SAGACMDSearcher:
     Inspired by the 'Rsagacmd' R package implementation.
     """
 
-    def search_saga_cmd(self):
+    def search_saga_cmd(self) -> Union[Path, None]:  # type: ignore
         if USER_PLATFORM == Platforms.LINUX:
             return self._search_linux()
         elif USER_PLATFORM == Platforms.WINDOWS:
             return self._search_windows()
         elif USER_PLATFORM == Platforms.MAC_OS:
             return self._search_mac_os()
+        else:
+            raise OSError('Can not search for saga_cmd on your OS.')
 
-    def _search_mac_os(self):
+    def _search_mac_os(self) -> Union[Path, None]:  # type: ignore
         dirs = (
-            Path('/Applications/SAGA.app/Contents/MacOS'),
-            Path('/usr/local/bin'),
-            Path('/Applications/QGIS.app/Contents/MacOS/bin')
+            '/Applications/SAGA.app/Contents/MacOS'
+            '/usr/local/bin'
+            '/Applications/QGIS.app/Contents/MacOS/bin'
         )
         file_name = 'saga_cmd'
         if (path := self._search_file(dirs, file_name)) is not None and \
             check_is_executable(path):
             return path
 
-    def _search_windows(self):
+    def _search_windows(self) -> Union[Path, None]:  # type: ignore
         dirs = (
-            Path('C:/Program Files/SAGA-GIS'),
-            Path('C:/Program Files (x86)/SAGA-GIS'),
-            Path('C:/SAGA-GIS'),
-            Path('C:/OSGeo4W'),
-            Path('C:/OSGeo4W64'),
+            'C:/Program Files/SAGA-GIS',
+            'C:/Program Files (x86)/SAGA-GIS',
+            'C:/SAGA-GIS',
+            'C:/OSGeo4W',
+            'C:/OSGeo4W64',
         )
         file_name = 'saga_cmd.exe'
         if (path := self._search_file(dirs, file_name)) is not None:
@@ -178,10 +187,10 @@ class SAGACMDSearcher:
 
     def _search_linux(self) -> Union[Path, None]:  # type: ignore
         dirs = (
-            Path('/usr'),
+            '/usr',
         )
         file_name = 'saga_cmd'
-        # Check if saga_cmd is in path.
+        # Check if saga_cmd is in path because that's where it usually is on Linux.
         try:
             file_name_path = Path(file_name)
             check_is_executable(file_name_path)
@@ -192,9 +201,11 @@ class SAGACMDSearcher:
             return path
 
     @staticmethod
-    def _search_file(dirs: Iterable[Path], file_name: str) -> Union[Path, None]:  # type: ignore
-        assert all(dir_.is_dir() for dir_ in dirs)
-        for dir_ in dirs:
+    def _search_file(dirs: Iterable[PathLike], file_name: str) -> Union[Path, None]:  # type: ignore
+        dirs_as_path = tuple(map(Path, dirs))
+        for dir_ in dirs_as_path:
+            if not dir_.is_dir():
+                continue
             for cur_path, _, files in os.walk(dir_):
                 if file_name in files:
                     path = dir_ / cur_path / file_name
@@ -203,3 +214,8 @@ class SAGACMDSearcher:
                         return path
                     except:
                         continue
+
+
+def get_sample_dem() -> Path:
+    """Get a sample DEM of an area in North-Eastern Romania."""
+    return HERE / '../assets/DEM_30m.tif'

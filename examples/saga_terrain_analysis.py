@@ -1,5 +1,8 @@
 from pathlib import Path
-from typing import Callable
+from typing import (
+    Callable,
+    Optional
+)
 
 from PySAGA_cmd.saga import (
     SAGA,
@@ -7,10 +10,37 @@ from PySAGA_cmd.saga import (
     ToolOutput,
     Executable
 )
+from PySAGA_cmd.utils import get_sample_dem
 
 
 class TerrainAnalysis(Executable):
     """This class can be used to calculate terrain analysis grids."""
+
+    def __init__(self, dem: Path, saga_cmd_path: Optional[Path] = None):
+        self.saga = SAGA(saga_cmd_path)
+        self.dem = dem
+        self.out_dir = self.dem.parent
+
+        self.tools: list[Callable[[], ToolOutput]] = [
+            self.index_of_convergence,
+            self.terrain_surface_convexity,
+            self.topographic_openness,
+            self.slope_aspect_curvature,
+            self.real_surface_area,
+            self.wind_exposition_index,
+            self.topographic_position_index,
+            self.valley_depth,
+            self.morphometric_protection_index,
+            self.terrain_ruggedness_index,
+            self.vector_ruggedness_measure,
+            self.terrain_surface_texture,
+            self.upslope_and_downslope_curvature,
+            self.flow_accumulation_parallelizable,
+            self.flow_path_length,
+            self.slope_length,
+            self.cell_balance,
+            self.saga_wetness_index
+        ]
 
     def execute(self):
         for tool in self.tools:
@@ -263,35 +293,8 @@ class TerrainAnalysis(Executable):
             slope_weight=1
         )
 
-    def __init__(self, saga_cmd_path: Path, dem: Path):
-        self.saga = SAGA(saga_cmd_path)
-        self.dem = dem
-        self.out_dir = self.dem.parent
-
-        self.tools: list[Callable[[], ToolOutput]] = [
-            self.index_of_convergence,
-            self.terrain_surface_convexity,
-            self.topographic_openness,
-            self.slope_aspect_curvature,
-            self.real_surface_area,
-            self.wind_exposition_index,
-            self.topographic_position_index,
-            self.valley_depth,
-            self.morphometric_protection_index,
-            self.terrain_ruggedness_index,
-            self.vector_ruggedness_measure,
-            self.terrain_surface_texture,
-            self.upslope_and_downslope_curvature,
-            self.flow_accumulation_parallelizable,
-            self.flow_path_length,
-            self.slope_length,
-            self.cell_balance,
-            self.saga_wetness_index
-        ]
-
 
 if __name__ == '__main__':
-    saga_cmd = Path('/usr/bin/saga_cmd')
-    sample_dem = Path('../data/example_input/DEM_30m.tif')
-    analysis = TerrainAnalysis(saga_cmd, sample_dem)
+    sample_dem = get_sample_dem()
+    analysis = TerrainAnalysis(sample_dem)
     analysis.execute()

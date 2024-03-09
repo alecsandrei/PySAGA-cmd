@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 
 from PySAGA_cmd import SAGA
+from PySAGA_cmd.utils import get_sample_dem
 import matplotlib.pyplot as plt
 from matplotlib import gridspec
 
@@ -11,7 +12,7 @@ if __name__ == '__main__':
     here = Path(__file__)
     os.chdir(here.parent)
 
-    dem = Path(__file__).parent / '../data/example_input/DEM_30m.tif'
+    dem = get_sample_dem()
     saga = SAGA('/usr/bin/saga_cmd')
 
     # Defining tools.
@@ -23,7 +24,7 @@ if __name__ == '__main__':
     elevation, slope = output1.get_raster(['elevation', 'slope'])
 
     output2 = shading.execute(verbose=True, elevation=dem, shade='temp.sdat', method='5')
-    shading = output2.get_raster('shade')[0]
+    shading = output2.get_raster('shade')
 
     fig = plt.figure(figsize=(15, 10))
 

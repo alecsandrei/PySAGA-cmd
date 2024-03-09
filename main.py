@@ -3,6 +3,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 
 from PySAGA_cmd.saga import SAGA
+from PySAGA_cmd.utils import get_sample_dem
 
 
 def main():
@@ -10,9 +11,10 @@ def main():
 
     # Defining objects.
     # In general, it's good behaviour to specify file extension.
-    # So please, do specify them for output objects (youc can even
+    # So please, do specify them for output objects (you can even
     # do it for 'temp'!)
-    dem = Path(__file__).parent / 'data/example_input/DEM_30m.tif'
+
+    dem = get_sample_dem()
     output = Path(__file__).parent / 'data/example_output/flow_accumulation.sdat'
 
     # Defining libraries
@@ -36,9 +38,9 @@ def main():
 
     # If you also install the extra dependencies, the following lines
     # of code are available and you can plot your output rasters.
-    rasters = outputs[-1].get_raster('flow')
-    raster = rasters[0].plot(cmap='Blues', norm='log',
-                             cbar_kwargs=dict(label='log of accumulated flow'))
+    raster = outputs[-1].get_raster('flow')
+    raster = raster.plot(cmap='Blues', norm='log',
+                          cbar_kwargs=dict(label='log of accumulated flow'))
     raster.set_title('Flow accumulation map')
     plt.show()
 
