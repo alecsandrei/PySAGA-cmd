@@ -112,7 +112,7 @@ output1 = slope_aspect_curvature.execute(verbose=True, elevation=dem, slope='tem
 elevation, slope = output1.get_raster(['elevation', 'slope'])
 
 output2 = shading.execute(verbose=True, elevation=dem, shade='temp.sdat', method='5')
-shading = output2.get_raster('shade')[0]
+shading = output2.get_raster('shade')
 
 
 import matplotlib.pyplot as plt
