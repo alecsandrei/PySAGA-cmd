@@ -56,6 +56,9 @@ class Raster:
         if not self.path.suffix:
             self.path = infer_file_extension(self.path)
 
+    def __str__(self):
+        return os.fspath(self.path)
+
     def _read_raster(
         self,
         nodata: Union[SupportsFloat, Iterable[SupportsFloat]] = -32768.0
@@ -188,6 +191,9 @@ class Vector:
         self.path = Path(self.path)
         if not self.path.suffix:
             self.path = infer_file_extension(self.path)
+    
+    def __str__(self):
+        return os.fspath(self.path)
 
     def _read_vector(self):
         return gpd.read_file(self.path)
