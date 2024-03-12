@@ -17,6 +17,7 @@ from typing import (
     Any,
     runtime_checkable,
     TYPE_CHECKING,
+    Literal
 )
 from pathlib import Path
 import subprocess
@@ -28,6 +29,9 @@ from dataclasses import (
     dataclass,
     field
 )
+from functools import partial
+import csv
+import re
 
 from PySAGA_cmd.utils import (
     check_is_executable,
@@ -256,6 +260,9 @@ class SAGA(SagaExecutable):
     """
 
     saga_cmd: Optional[Union[PathLike, SAGACMD]] = field(default=None)
+    _version: Optional[str] = field(default=None)
+    _raster_formats: Union[list[str], None] = field(init=False, default=None)
+    _vector_formats: Union[list[str], None] = field(init=False, default=None)
 
     def __post_init__(self) -> None:
         if not isinstance(self.saga_cmd, SAGACMD):
@@ -267,6 +274,24 @@ class SAGA(SagaExecutable):
         if not isinstance(library, Library):
             return self.get_library(library=str(library))
         return library
+
+    @property
+    def raster_formats(self):
+        if self._raster_formats is None:
+            self._raster_formats = get_formats(self, type_='raster')
+        return self._raster_formats
+
+    @property
+    def vector_formats(self):
+        if self._vector_formats is None:
+            self._vector_formats = get_formats(self, type_='vector')
+        return self._vector_formats
+
+    @property
+    def version(self) -> Union[None, str]:
+        if self._version is None:
+            self._version = get_saga_version(self)
+        return self._version
 
     @property
     def temp_dir(self) -> Path:
@@ -711,3 +736,60 @@ class ToolOutput(Output):
             [Vector(v) for k, v in self.parameters.items()
              if k in parameters]
         )
+
+
+def get_saga_version(saga: SAGA) -> Union[str, None]:
+    """Get's the SAGA version using the version flag."""
+    saga.flag = 'version'
+    stdout = saga.execute().text
+    del saga.flag
+    assert stdout is not None
+    pattern = r'\d+\.\d+\.\d+'
+    match = re.search(pattern, stdout)
+    if match:
+        return match.group(0)
+    else:
+        print(
+            f'Could not parse SAGA version from stdout {stdout}.',
+            'To make use of all the functionality of the package,',
+            'Instantiate the "SAGA" object with a version parameter.'
+        )
+        return  # type: ignore
+
+
+def get_formats(saga: SAGA, type_: Literal['raster', 'vector']):
+    """Get's the possible raster or vector file extensions.
+
+    Requires SAGA >= 4.0.0.
+    """
+    if saga.version is None or int(saga.version[0]) < 4:
+        return  # type: ignore
+
+    gdal_formats = saga / 'io_gdal' / 10
+
+    # Create an empty temporary file.
+    with tempfile.NamedTemporaryFile() as tmp:
+        path = Path(tmp.name)
+
+        gdal_formats_execute = partial(
+            gdal_formats.execute,
+            formats=path,
+            acces=2,
+            recognized=1,
+            verbose=False
+        )
+        assert type_ in ['raster', 'vector']
+
+        if type_ == 'raster':
+            gdal_formats_execute(type='0')
+        else:
+            gdal_formats_execute(type='1')
+
+        reader = csv.reader(
+            [string.decode('utf-8') for string in tmp.readlines()],
+            dialect="excel-tab"
+        )
+        last_row = tuple(reader)[-1]
+        third_column = last_row[2]
+        extensions = re.findall(r'\.(\w+)', third_column)
+        return extensions

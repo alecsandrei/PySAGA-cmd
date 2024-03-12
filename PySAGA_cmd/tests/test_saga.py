@@ -7,6 +7,7 @@ from PySAGA_cmd.saga import (
     Tool,
     Parameters
 )
+from PySAGA_cmd.utils import get_sample_dem
 
 
 # In order to run the tests, saga_cmd needs to be found.
@@ -80,7 +81,6 @@ class TestLibrary:
         assert lib.flag == '--help'
 
 
-
 class TestTool:
 
     def test_initalize(self):
@@ -143,6 +143,31 @@ class TestPipeline:
 
 class TestExecution:
 
-    def test_tool_execution(self):
-        # TODO: write test.
-        pass
+    def test_tool_execution(self, tmpdir: str):
+        dem = get_sample_dem()
+        hydro_preproc_dem = Path(tmpdir) / ''.join(['preproc_', dem.name])
+
+        del SAGA_.flag
+        # Defining libraries
+        preprocessor = SAGA_ / 'ta_preprocessor'
+        hydrology = SAGA_ / 'ta_hydrology'
+
+        # Defining tools
+        route_detection = preprocessor / 'Sink Drainage Route Detection'
+        sink_removal = preprocessor / 'Sink Removal'
+        flow_accumulation = hydrology / 'Flow Accumulation (Parallelizable)'
+
+        # Piping
+        pipe = (
+            route_detection(elevation=dem, sinkroute='temp.sdat') |
+            sink_removal(dem=route_detection.elevation,
+                         sinkroute=route_detection.sinkroute,
+                         dem_preproc='temp.sdat') |
+            flow_accumulation(dem=sink_removal.dem_preproc,
+                              flow=hydro_preproc_dem)
+        )
+        outputs = pipe.execute(verbose=False)
+        assert len(outputs) == 3
+        assert Path(route_detection.sinkroute).exists()
+        assert Path(sink_removal.dem_preproc).exists()
+        assert hydro_preproc_dem.exists()
