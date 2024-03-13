@@ -13,6 +13,7 @@ from typing import (
     Sequence,
     Iterable,
     TypeVar,
+    Generator,
     overload,
     Any,
     runtime_checkable,
@@ -201,8 +202,12 @@ class Executable(ABC):
 
 
 @dataclass
-class SagaExecutable(Executable):
+class SAGAExecutable(Executable):
     """Describes an executable inside SAGAGIS."""
+
+    @abstractmethod
+    def __str__(self):
+        """The name of the object."""
 
     @property
     @abstractmethod
@@ -228,10 +233,10 @@ class SagaExecutable(Executable):
 
 
 @dataclass
-class SAGA(SagaExecutable):
+class SAGA(SAGAExecutable):
     """The SAGA GIS main program as an object.
 
-    This object inherits from 'SagaExecutable'.
+    This object inherits from 'SAGAExecutable'.
 
     Parameters
     ----------
@@ -261,8 +266,8 @@ class SAGA(SagaExecutable):
 
     saga_cmd: Optional[Union[PathLike, SAGACMD]] = field(default=None)
     _version: Optional[str] = field(default=None)
-    _raster_formats: Union[list[str], None] = field(init=False, default=None)
-    _vector_formats: Union[list[str], None] = field(init=False, default=None)
+    _raster_formats: Union[set[str], None] = field(init=False, default=None)
+    _vector_formats: Union[set[str], None] = field(init=False, default=None)
 
     def __post_init__(self) -> None:
         if not isinstance(self.saga_cmd, SAGACMD):
@@ -274,6 +279,9 @@ class SAGA(SagaExecutable):
         if not isinstance(library, Library):
             return self.get_library(library=str(library))
         return library
+
+    def __str__(self):
+        return str(self.saga_cmd)
 
     @property
     def raster_formats(self):
@@ -350,12 +358,21 @@ class SAGA(SagaExecutable):
         library_ = self.get_library(library)
         return Tool(library=library_, tool=tool)
 
-    def execute(self) -> Output:
-        return Output(self.command.execute())
+    def execute(self, ignore_stderr: bool = False) -> Output:
+        """Executes the command.
+
+        Args:
+            ignore_stderr: Whether or not the presence of a
+              stderr raises an error.
+
+        Returns:
+            Output: An object describing the output of the execution.
+        """
+        return Output(self, self.command.execute(), ignore_stderr)
 
 
 @dataclass
-class Library(SagaExecutable):
+class Library(SAGAExecutable):
     """Describes a SAGA GIS library.
 
     Parameters
@@ -411,15 +428,24 @@ class Library(SagaExecutable):
         """
         return Tool(library=self, tool=tool)
 
-    def execute(self) -> Output:
-        return Output(self.command.execute())
+    def execute(self, ignore_stderr: bool = False) -> Output:
+        """Executes the command.
+
+        Args:
+            ignore_stderr: Whether or not the presence of a
+              stderr raises an error.
+
+        Returns:
+            Output: An object describing the output of the execution.
+        """
+        return Output(self, self.command.execute(), ignore_stderr)
 
 
 TTool = TypeVar("TTool", bound='Tool')
 
 
 @dataclass
-class Tool(SagaExecutable):
+class Tool(SAGAExecutable):
     """Describes a SAGA GIS tool.
 
     Parameters
@@ -508,8 +534,20 @@ class Tool(SagaExecutable):
     def execute(
         self,
         verbose: bool = False,
+        ignore_stderr: bool = False,
         **kwargs: SupportsStr
     ) -> ToolOutput:
+        """Execute the command.
+
+        Args:
+            verbose: Whether or not to print the progress of each tool
+              when it's executing.
+            ignore_stderr: Whether or not the presence of a stderr
+              raises an error.
+
+        Returns:
+            Output: An object describing the output of the execution.
+        """
         if kwargs:
             self(**kwargs)
         for param, value in self.parameters.items():
@@ -518,7 +556,7 @@ class Tool(SagaExecutable):
                 value = str(infer_file_extension(value_as_path))
                 self.parameters[param] = value
         completed_process = self.command.execute(verbose=verbose)
-        return ToolOutput(completed_process, self.parameters)
+        return ToolOutput(self, completed_process, ignore_stderr)
 
 
 TPipeline = TypeVar("TPipeline", bound='Pipeline')
@@ -567,14 +605,18 @@ class Pipeline(Executable):
     def __init__(
         self,
         tool: Tool
-    ):
+    ) -> None:
         self.tools = [tool]
 
     def __or__(self: TPipeline, tool: Tool) -> TPipeline:
         self.tools.append(tool)
         return self
 
-    def execute(self, verbose: bool = False) -> list[ToolOutput]:
+    def execute(
+        self,
+        verbose: bool = False,
+        ignore_stderr: bool = False
+    ) -> list[ToolOutput]:
         """Executes the tools in the pipeline.
 
         Args:
@@ -584,19 +626,19 @@ class Pipeline(Executable):
         outputs = []
         for tool in self.tools:
             print(self._format_tool_string(tool))
-            output = tool.execute(verbose=verbose)
+            output = tool.execute(verbose=verbose, ignore_stderr=ignore_stderr)
             outputs.append(output)
         return outputs
 
     @staticmethod
-    def _format_tool_string(tool: Tool):
+    def _format_tool_string(tool: Tool) -> str:
         string = []
         string.extend(['-'*25, '\n'])
         string.extend([str(tool.library), ' ', str(tool), '\n'])
         string.extend(['    ', str(tool.parameters), '\n'])
         return ''.join(str(element) for element in string)
 
-    def __str__(self):
+    def __str__(self) -> str:
         string = [self._format_tool_string(tool) for tool in self.tools]
         return ''.join(str(element) for element in string)
 
@@ -626,13 +668,13 @@ class Command:
     def __init__(self, *args: SupportsStr) -> None:
         self.args = [str(arg) for arg in args if arg]
 
-    def __iter__(self):
+    def __iter__(self) -> Generator[str, None, None]:
         return (arg for arg in self.args)
 
-    def __getitem__(self, idx: int):
+    def __getitem__(self, idx: int) -> str:
         return self.args[idx]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return ' '.join(f'"{arg}"' for arg in self.args)
 
     def execute(self, verbose: bool = False) -> subprocess.Popen:
@@ -657,11 +699,13 @@ class Output:
     ----------
     completed_process: A 'CompletedProcess' object that was returned by
       a command execution.
-    parameters: The 'Parameters' object passed to the 'Command' object.
+    ignore_stderr: Whether or not the presence of a stderr raises an error.
 
     Attributes
     ----------
-    text: The 'stdout' attribute of the 'CompletedProcess' object as string.
+    stdout: The 'stdout' attribute of the 'CompletedProcess' object as string.
+    stderr: The 'stderr' attribute of the 'CompletedProcess' object as string.
+    stdin: The 'stdin' attribute of the 'CompletedProcess' object as string.
 
     Methods
     ----------
@@ -673,17 +717,27 @@ class Output:
       or a list of them.
     """
 
+    saga_executable: Union[SAGA, Library, Tool]
     completed_process: subprocess.Popen
-    text: Union[str, None] = field(init=False, default=None)
+    ignore_stderr: bool
+    stdout: Union[str, None] = field(init=False, default=None)
+    stderr: Union[str, None] = field(init=False, default=None)
+    stdin: Union[str, None] = field(init=False, default=None)
 
     def __post_init__(self) -> None:
         if self.completed_process.stdout is not None:
-            self.text = self.completed_process.stdout.read()
+            self.stdout = self.completed_process.stdout.read()
+        if (stderr := self.completed_process.stderr) is not None and \
+           (read := stderr.read().strip()):
+            if not self.ignore_stderr:
+                raise ExecutionError(read, self.saga_executable)
+            self.stderr = read
+        if self.completed_process.stdin is not None:
+            self.stdin = self.completed_process.stdin.read()
 
 
 @dataclass
 class ToolOutput(Output):
-    parameters: Parameters = field(default_factory=Parameters)
 
     @overload
     def get_raster(  # type: ignore
@@ -704,10 +758,11 @@ class ToolOutput(Output):
 
         from .objects import Raster
 
+        assert isinstance(self.saga_executable, Tool)
         if isinstance(parameters, str):
-            return Raster(self.parameters[parameters])
+            return Raster(self.saga_executable.parameters[parameters])
         return (
-            [Raster(v) for k, v in self.parameters.items()
+            [Raster(v) for k, v in self.saga_executable.parameters.items()
              if k in parameters]
         )
 
@@ -730,10 +785,11 @@ class ToolOutput(Output):
 
         from .objects import Vector
 
+        assert isinstance(self.saga_executable, Tool)
         if isinstance(parameters, str):
-            return Vector(self.parameters[parameters])
+            return Vector(self.saga_executable.parameters[parameters])
         return (
-            [Vector(v) for k, v in self.parameters.items()
+            [Vector(v) for k, v in self.saga_executable.parameters.items()
              if k in parameters]
         )
 
@@ -741,7 +797,7 @@ class ToolOutput(Output):
 def get_saga_version(saga: SAGA) -> Union[str, None]:
     """Get's the SAGA version using the version flag."""
     saga.flag = 'version'
-    stdout = saga.execute().text
+    stdout = saga.execute().stdout
     del saga.flag
     assert stdout is not None
     pattern = r'\d+\.\d+\.\d+'
@@ -792,4 +848,17 @@ def get_formats(saga: SAGA, type_: Literal['raster', 'vector']):
         last_row = tuple(reader)[-1]
         third_column = last_row[2]
         extensions = re.findall(r'\.(\w+)', third_column)
-        return extensions
+        return set(extensions)
+
+
+class ExecutionError(Exception):
+    """Raised when an execution outputs a stderr."""
+    def __init__(self, stderr: str, saga_executable: SAGAExecutable):
+        self.stderr = stderr
+        super().__init__(
+            'A stderr was detected after the execution of '
+            f'"{saga_executable}": \n'
+            f'{self.stderr}\n'
+            'If you want to suppress this error, set "ignore_stderr" '
+            'to True when executing.'
+        )

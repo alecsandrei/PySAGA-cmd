@@ -32,7 +32,7 @@ def main():
         sink_removal(dem=route_detection.elevation,
                      sinkroute=route_detection.sinkroute,
                      dem_preproc='temp.sdat') |
-        flow_accumulation(dem=sink_removal.dem_preproc, flow=output)
+        flow_accumulation(dem='blah', flow=output)
     )
     outputs = pipe.execute(verbose=True)
 
@@ -40,7 +40,7 @@ def main():
     # of code are available and you can plot your output rasters.
     raster = outputs[-1].get_raster('flow')
     raster = raster.plot(cmap='Blues', norm='log',
-                          cbar_kwargs=dict(label='log of accumulated flow'))
+                         cbar_kwargs=dict(label='log of accumulated flow'))
     raster.set_title('Flow accumulation map')
     plt.show()
 
