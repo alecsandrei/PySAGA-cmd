@@ -6,6 +6,7 @@ import os
 import time
 import shutil
 import tempfile
+import concurrent.futures
 from typing import (
     Union,
     Optional,
@@ -283,14 +284,12 @@ class SAGA(SAGAExecutable):
     def __str__(self):
         return str(self.saga_cmd)
 
-    @property
-    def raster_formats(self):
+    def get_raster_formats(self):
         if self._raster_formats is None:
             self._raster_formats = get_formats(self, type_='raster')
         return self._raster_formats
 
-    @property
-    def vector_formats(self):
+    def get_vector_formats(self):
         if self._vector_formats is None:
             self._vector_formats = get_formats(self, type_='vector')
         return self._vector_formats
@@ -535,6 +534,7 @@ class Tool(SAGAExecutable):
         self,
         verbose: bool = False,
         ignore_stderr: bool = False,
+        infer_obj_type: bool = True,
         **kwargs: SupportsStr
     ) -> ToolOutput:
         """Execute the command.
@@ -544,19 +544,39 @@ class Tool(SAGAExecutable):
               when it's executing.
             ignore_stderr: Whether or not the presence of a stderr
               raises an error.
+            infer_obj_type: Whether or not to infer the output as
+              either Vector or Raster objects.
 
         Returns:
             Output: An object describing the output of the execution.
         """
         if kwargs:
             self(**kwargs)
+
+        # Add this for loop in another func.
         for param, value in self.parameters.items():
             value_as_path = Path(value)
             if value_as_path.parent.exists() and not value_as_path.suffix:
                 value = str(infer_file_extension(value_as_path))
                 self.parameters[param] = value
-        completed_process = self.command.execute(verbose=verbose)
-        return ToolOutput(self, completed_process, ignore_stderr)
+
+        command_partial = partial(self.command.execute, verbose)
+        saga = self.library.saga
+        if (
+            not any((saga._raster_formats, saga._vector_formats))
+            and infer_obj_type
+        ):
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                funcs = (
+                    saga.get_raster_formats,
+                    saga.get_vector_formats,
+                    command_partial
+                )
+                output = list(executor.map(lambda f: f(), funcs))[-1]
+
+        else:
+            output = command_partial()
+        return ToolOutput(self, output, ignore_stderr)
 
 
 TPipeline = TypeVar("TPipeline", bound='Pipeline')
@@ -820,7 +840,6 @@ def get_formats(saga: SAGA, type_: Literal['raster', 'vector']):
     """
     if saga.version is None or int(saga.version[0]) < 4:
         return  # type: ignore
-
     gdal_formats = saga / 'io_gdal' / 10
 
     # Create an empty temporary file.
@@ -832,7 +851,8 @@ def get_formats(saga: SAGA, type_: Literal['raster', 'vector']):
             formats=path,
             acces=2,
             recognized=1,
-            verbose=False
+            verbose=False,
+            infer_obj_type=False,
         )
         assert type_ in ['raster', 'vector']
 

@@ -15,7 +15,9 @@ def main():
     # do it for 'temp'!)
 
     dem = get_sample_dem()
-    output = Path(__file__).parent / 'data/example_output/flow_accumulation.sdat'
+    output = (
+        Path(__file__).parent / 'data/example_output/flow_accumulation.sdat'
+    )
 
     # Defining libraries
     preprocessor = saga / 'ta_preprocessor'
