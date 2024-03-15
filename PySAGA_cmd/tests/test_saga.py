@@ -1,5 +1,4 @@
 from pathlib import Path
-from functools import cached_property
 
 from PySAGA_cmd.saga import (
     SAGA,
@@ -14,7 +13,7 @@ from PySAGA_cmd.utils import get_sample_dem
 SAGA_ = SAGA()
 
 
-class TestSaga:
+class TestSAGA:
 
     def test_get_library(self):
         library = 'ta_morphometry'
@@ -66,6 +65,11 @@ class TestSaga:
         tool.flag = flag
         del tool.flag
         assert not tool.flag
+
+    def test_version(self):
+        assert SAGA_.version is not None
+        assert SAGA_.version.count('.') == 2
+        assert len(SAGA_.version.split('.')) == 3
 
 
 class TestLibrary:

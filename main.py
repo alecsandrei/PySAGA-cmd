@@ -34,7 +34,7 @@ def main():
         sink_removal(dem=route_detection.elevation,
                      sinkroute=route_detection.sinkroute,
                      dem_preproc='temp.sdat') |
-        flow_accumulation(dem='blah', flow=output)
+        flow_accumulation(dem=sink_removal.dem_preproc, flow=output)
     )
     outputs = pipe.execute(verbose=True)
 

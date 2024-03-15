@@ -9,26 +9,21 @@ from typing import (
     Iterable,
     SupportsFloat,
     Optional,
+    TYPE_CHECKING
 )
 from dataclasses import dataclass
 
-from PySAGA_cmd.utils import infer_file_extension
+from PySAGA_cmd.utils import (
+   infer_file_extension,
+   depends
+)
 
-try:
+if TYPE_CHECKING:
     import numpy as np
     import rasterio as rio  # type: ignore
     import matplotlib.axes as axes
-    import matplotlib.pyplot as plt
-    from mpl_toolkits.axes_grid1 import make_axes_locatable  # type: ignore
     import geopandas as gpd  # type: ignore
     gpd.options.io_engine = "pyogrio"
-
-except ModuleNotFoundError as e:
-    raise ModuleNotFoundError(
-        f'There was an error importing {e.name} as it is ' +
-        'not installed. To install it, run ' +
-        '"pip install PySAGA-cmd[extras]".'
-        ) from e
 
 
 PathLike = Union[str, os.PathLike]
@@ -44,9 +39,9 @@ class Raster:
 
     Methods
     ----------
-    plot: Plots the raster file. Returns a 'GeoAxes' object.
-    hist: Plots a hist of the raster file. Returns an 'Axes' object.
-    to_numpy: Returns the Raster object as a 'np.array' object.
+    plot: Plots the raster file. Returns a axes.Axes object.
+    hist: Plots a hist of the raster file. Returns an axes.Axes object.
+    to_numpy: Returns the Raster object as a np.array.
     """
 
     path: PathLike
@@ -59,6 +54,7 @@ class Raster:
     def __str__(self):
         return os.fspath(self.path)
 
+    @depends
     def _read_raster(
         self,
         nodata: Union[SupportsFloat, Iterable[SupportsFloat]] = -32768.0
@@ -72,6 +68,8 @@ class Raster:
             tuple: A tuple containing a rasterio.DatasetReader
               and a numpy.array.
         """
+        import rasterio as rio
+
         with rio.open(self.path) as src:
             array = src.read(1).astype("float")
             if isinstance(nodata, SupportsFloat):
@@ -80,6 +78,7 @@ class Raster:
                 array[array == value] = np.nan
         return src, array
 
+    @depends
     def plot(
         self,
         cmap='Greys_r',
@@ -98,11 +97,15 @@ class Raster:
               set nodata values to the raster map.
             ax: A matplotlib.axes.Axes object.
             cbar: Whether to add a colorbar or not.
-            **kwargs: Options to pass to the 'imshow' method of matplotlib.
+            cbar_kwargs: Keyword arguments to pass to plt.colorbar.
+            **kwargs: Keyword arguments to pass to the axes.Axes.imshow.
 
         Returns:
             matplotlib.axes.Axes: A matplotlib.axes.Axes object.
         """
+        import matplotlib.pyplot as plt
+        from mpl_toolkits.axes_grid1 import make_axes_locatable  # type: ignore
+
         src, array = self._read_raster(nodata=nodata)
         left, bottom, right, top = src.bounds
         if ax is None:
@@ -130,6 +133,7 @@ class Raster:
             plt.colorbar(im, **cbar_kwargs)
         return ax
 
+    @depends
     def hist(
         self,
         nodata: Union[SupportsFloat, Iterable[SupportsFloat]] = -32768.0,
@@ -149,6 +153,8 @@ class Raster:
         Returns:
             matplotlib.axes.Axes: A matplotlib.axes.Axes object.
         """
+        import matplotlib.pyplot as plt
+
         _, array = self._read_raster(nodata=nodata)
         array = array.flatten()
         if ax is None:
@@ -160,6 +166,7 @@ class Raster:
         )
         return ax
 
+    @depends
     def to_numpy(
         self,
         nodata: Union[SupportsFloat, Iterable[SupportsFloat]] = -32768.0
@@ -191,19 +198,24 @@ class Vector:
         self.path = Path(self.path)
         if not self.path.suffix:
             self.path = infer_file_extension(self.path)
-    
+
     def __str__(self):
         return os.fspath(self.path)
 
     def _read_vector(self):
+        import geopandas as gpd
+
         return gpd.read_file(self.path)
 
+    @depends
     def plot(
         self,
         ax: Optional[axes.Axes] = None,
         **kwargs
     ) -> axes.Axes:
         """Plots the vector object."""
+        import matplotlib.pyplot as plt
+
         file = self._read_vector()
         if ax is None:
             fig = plt.figure()

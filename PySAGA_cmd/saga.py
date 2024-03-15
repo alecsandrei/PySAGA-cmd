@@ -244,6 +244,8 @@ class SAGA(SAGAExecutable):
     saga_cmd: The file path to the 'saga_cmd' file or a SAGACMD object.
     For information on where to find it, check the following link:
       https://sourceforge.net/projects/saga-gis/files/SAGA%20-%20Documentation/Tutorials/Command_Line_Scripting/.
+    version: The version of SAGAGIS. Can be passed as, for example,
+      '9', '9.0' or '9.0.0'.
 
     Attributes
     ----------
@@ -266,7 +268,7 @@ class SAGA(SAGAExecutable):
     """
 
     saga_cmd: Optional[Union[PathLike, SAGACMD]] = field(default=None)
-    _version: Optional[str] = field(default=None)
+    version: Optional[str] = field(default=None)
     _raster_formats: Union[set[str], None] = field(init=False, default=None)
     _vector_formats: Union[set[str], None] = field(init=False, default=None)
 
@@ -275,6 +277,8 @@ class SAGA(SAGAExecutable):
             self.saga_cmd = SAGACMD(self.saga_cmd)
         self._flag = Flag()
         self._temp_dir = temp_dir()
+        if self.version is None:
+            self.version = get_saga_version(self)
 
     def __truediv__(self, library: Union[Library, SupportsStr]):
         if not isinstance(library, Library):
@@ -293,12 +297,6 @@ class SAGA(SAGAExecutable):
         if self._vector_formats is None:
             self._vector_formats = get_formats(self, type_='vector')
         return self._vector_formats
-
-    @property
-    def version(self) -> Union[None, str]:
-        if self._version is None:
-            self._version = get_saga_version(self)
-        return self._version
 
     @property
     def temp_dir(self) -> Path:
