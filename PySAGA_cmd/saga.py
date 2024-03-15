@@ -34,6 +34,7 @@ from dataclasses import (
 from functools import partial
 import csv
 import re
+from collections import UserDict
 
 from PySAGA_cmd.utils import (
     check_is_executable,
@@ -131,12 +132,7 @@ class Flag:
         return str(self) == other
 
 
-# TODO: Switch inheritance from dict to UserDict
-# read Fluent Python pg 490-493 for details
-
-
-@dataclass
-class Parameters(dict[str, str]):
+class Parameters(UserDict[str, str]):
     """The SAGA GIS tool parameters.
 
     This object inherits from 'dict'.
@@ -166,18 +162,6 @@ class Parameters(dict[str, str]):
 
     def __str__(self) -> str:
         return ' '.join(self.formatted)
-
-    def __repr__(self) -> str:
-        return dict.__repr__(self)
-
-    def __getattr__(self, name: str) -> str:
-        try:
-            return self[name]
-        except KeyError as e:
-            raise AttributeError(e) from e
-
-    def __setattr__(self, name, value) -> None:
-        self[name] = value
 
     @property
     def formatted(self) -> list[str]:
