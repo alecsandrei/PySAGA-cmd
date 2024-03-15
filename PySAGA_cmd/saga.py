@@ -19,7 +19,7 @@ from typing import (
     Any,
     runtime_checkable,
     TYPE_CHECKING,
-    Literal
+    Literal,
 )
 from pathlib import Path
 import subprocess
@@ -177,7 +177,6 @@ class Parameters(UserDict[str, str]):
         return params
 
 
-@dataclass
 class Executable(ABC):
     """Describes an object that is executable."""
 
@@ -186,7 +185,6 @@ class Executable(ABC):
         """Implements the execution behaviour of the object."""
 
 
-@dataclass
 class SAGAExecutable(Executable):
     """Describes an executable inside SAGAGIS."""
 
@@ -215,6 +213,9 @@ class SAGAExecutable(Executable):
     def flag(self):
         """Deletes the current flag."""
         self._flag = Flag()
+
+
+FormatSet = Optional[set[str]]
 
 
 @dataclass
@@ -253,8 +254,8 @@ class SAGA(SAGAExecutable):
 
     saga_cmd: Optional[Union[PathLike, SAGACMD]] = field(default=None)
     version: Optional[str] = field(default=None)
-    _raster_formats: Union[set[str], None] = field(init=False, default=None)
-    _vector_formats: Union[set[str], None] = field(init=False, default=None)
+    _raster_formats: FormatSet = field(init=False, default=None, repr=False)
+    _vector_formats: FormatSet = field(init=False, default=None, repr=False)
 
     def __post_init__(self) -> None:
         if not isinstance(self.saga_cmd, SAGACMD):
@@ -650,6 +651,8 @@ class PipelineError(Exception):
         self.message = message
         super().__init__(self.message)
 
+
+# TODO: Make command inherit from abc.Sequence.
 
 @dataclass
 class Command:
