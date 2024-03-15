@@ -234,7 +234,7 @@ def depends(func: Callable):
     """A decorator to handle missing modules."""
     def wrapper(*args, **kwargs):
         try:
-            func(*args, **kwargs)
+            return func(*args, **kwargs)
         except ModuleNotFoundError as e:
             e.msg = (
                 f'The PySAGA-cmd package depends on {e.name}. '

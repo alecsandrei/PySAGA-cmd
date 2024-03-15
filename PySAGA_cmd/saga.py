@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import os
-import time
 import shutil
 import tempfile
 import concurrent.futures
+import time
 from typing import (
     Union,
     Optional,
@@ -866,7 +866,7 @@ def get_formats(saga: SAGA, type_: Literal['raster', 'vector']):
         last_row = tuple(reader)[-1]
         third_column = last_row[2]
         extensions = re.findall(r'\.(\w+)', third_column)
-        return set(extensions)
+    return set(extensions)
 
 
 class ExecutionError(Exception):

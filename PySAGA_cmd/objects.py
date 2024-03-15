@@ -67,6 +67,7 @@ class Raster:
               and a numpy.array.
         """
         import rasterio as rio
+        import numpy as np
 
         with rio.open(self.path) as src:
             array = src.read(1).astype("float")
