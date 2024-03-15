@@ -22,8 +22,6 @@ if TYPE_CHECKING:
     import numpy as np
     import rasterio as rio  # type: ignore
     import matplotlib.axes as axes
-    import geopandas as gpd  # type: ignore
-    gpd.options.io_engine = "pyogrio"
 
 
 PathLike = Union[str, os.PathLike]
@@ -203,8 +201,7 @@ class Vector:
         return os.fspath(self.path)
 
     def _read_vector(self):
-        import geopandas as gpd
-
+        import geopandas as gpd  # type: ignore
         return gpd.read_file(self.path)
 
     @depends
