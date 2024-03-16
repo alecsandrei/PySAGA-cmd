@@ -68,8 +68,8 @@ class TestSAGA:
 
     def test_version(self):
         assert SAGA_.version is not None
-        assert SAGA_.version.count('.') == 2
-        assert len(SAGA_.version.split('.')) == 3
+        assert len(SAGA_.version) == 3
+        assert all(isinstance(val, int) for val in SAGA_.version)
 
 
 class TestLibrary:
@@ -109,8 +109,10 @@ class TestParameters:
             elevation=elevation,
             slope=slope
         )
-        assert params['elevation'] == str(elevation)
-        assert params['slope'] == str(slope)
+        assert params['elevation'] == elevation
+        assert params['slope'] == slope
+        assert params.formatted[-2] == f'-ELEVATION={str(elevation)}'
+        assert params.formatted[-1] == f'-SLOPE={str(slope)}'
 
     def test_parameters_temp(self, tmp_path: Path):
         elevation = tmp_path / 'elevation.tif'

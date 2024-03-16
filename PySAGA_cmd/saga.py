@@ -14,7 +14,6 @@ from typing import (
     Sequence,
     Iterable,
     TypeVar,
-    Generator,
     overload,
     Any,
     runtime_checkable,
@@ -25,7 +24,7 @@ from pathlib import Path
 import subprocess
 from abc import (
     ABC,
-    abstractmethod
+    abstractmethod,
 )
 from dataclasses import (
     dataclass,
@@ -34,7 +33,10 @@ from dataclasses import (
 from functools import partial
 import csv
 import re
-from collections import UserDict
+from collections import (
+    UserDict,
+    abc
+)
 
 from PySAGA_cmd.utils import (
     check_is_executable,
@@ -55,13 +57,13 @@ def temp_dir():
     return Path(tempfile.mkdtemp())
 
 
-PathLike = Union[str, os.PathLike]
-
-
 @runtime_checkable
 class SupportsStr(Protocol):
     def __str__(self) -> str:
         ...
+
+
+PathLike = Union[str, os.PathLike]
 
 
 @dataclass
@@ -156,8 +158,8 @@ class Parameters(UserDict[str, str]):
     """
 
     def __init__(self, **kwargs: SupportsStr) -> None:
-        for param, value in kwargs.items():
-            kwargs[param] = str(value)
+        # for param, value in kwargs.items():
+        #     kwargs[param] = str(value)
         super().__init__(**kwargs)
 
     def __str__(self) -> str:
@@ -165,16 +167,9 @@ class Parameters(UserDict[str, str]):
 
     @property
     def formatted(self) -> list[str]:
-        return self._format_parameters(self)
-
-    @staticmethod
-    def _format_parameters(parameters: Parameters) -> list[str]:
-        """Used to format the parameters as required by SAGAGIS."""
-        params = []
-        param_format = '-{PARAM}={value}'
-        for param, value in parameters.items():
-            params.append(param_format.format(PARAM=param.upper(), value=value))
-        return params
+        return (
+            [f'-{param.upper()}={str(value)}' for param, value in self.items()]
+        )
 
 
 class Executable(ABC):
@@ -203,7 +198,7 @@ class SAGAExecutable(Executable):
         return self._flag
 
     @flag.setter
-    def flag(self, flag: Union[SupportsStr, None]):
+    def flag(self, flag: Optional[SupportsStr]):
         """Sets the current flag."""
         if flag is not None:
             flag = str(flag)
@@ -215,7 +210,7 @@ class SAGAExecutable(Executable):
         self._flag = Flag()
 
 
-FormatSet = Optional[set[str]]
+MajMinPatch = tuple[int, int, int]
 
 
 @dataclass
@@ -229,8 +224,7 @@ class SAGA(SAGAExecutable):
     saga_cmd: The file path to the 'saga_cmd' file or a SAGACMD object.
     For information on where to find it, check the following link:
       https://sourceforge.net/projects/saga-gis/files/SAGA%20-%20Documentation/Tutorials/Command_Line_Scripting/.
-    version: The version of SAGAGIS. Can be passed as, for example,
-      '9', '9.0' or '9.0.0'.
+    version: The version of SAGAGIS.
 
     Attributes
     ----------
@@ -253,9 +247,13 @@ class SAGA(SAGAExecutable):
     """
 
     saga_cmd: Optional[Union[PathLike, SAGACMD]] = field(default=None)
-    version: Optional[str] = field(default=None)
-    _raster_formats: FormatSet = field(init=False, default=None, repr=False)
-    _vector_formats: FormatSet = field(init=False, default=None, repr=False)
+    version: Optional[MajMinPatch] = field(default=None)
+    _raster_formats: Optional[set[str]] = field(
+        init=False, default=None, repr=False
+    )
+    _vector_formats: Optional[set[str]] = field(
+        init=False, default=None, repr=False
+    )
 
     def __post_init__(self) -> None:
         if not isinstance(self.saga_cmd, SAGACMD):
@@ -503,11 +501,13 @@ class Tool(SAGAExecutable):
     def command(self) -> Command:
         assert isinstance(self.library.saga.saga_cmd, SupportsStr)
         return (
-            Command(self.library.saga.saga_cmd,
-                    self.flag,
-                    self.library,
-                    self.tool,
-                    *self.parameters.formatted)
+            Command(
+                self.library.saga.saga_cmd,
+                self.flag,
+                self.library,
+                self.tool,
+                *self.parameters.formatted
+            )
         )
 
     def __or__(self, tool: Tool) -> Pipeline:
@@ -538,7 +538,7 @@ class Tool(SAGAExecutable):
 
         # Add this for loop in another func.
         for param, value in self.parameters.items():
-            value_as_path = Path(value)
+            value_as_path = Path(str(value))
             if value_as_path.parent.exists() and not value_as_path.suffix:
                 value = str(infer_file_extension(value_as_path))
                 self.parameters[param] = value
@@ -566,7 +566,7 @@ TPipeline = TypeVar("TPipeline", bound='Pipeline')
 
 
 @dataclass
-class Pipeline(Executable):
+class Pipeline(Executable, abc.Sequence):
     """Used to chain tools.
 
     In order to create a 'Pipeline' object, you must use the 'or'
@@ -611,6 +611,12 @@ class Pipeline(Executable):
     ) -> None:
         self.tools = [tool]
 
+    def __len__(self) -> int:
+        return len(self.tools)
+
+    def __getitem__(self, idx) -> Any:
+        return self.tools[idx]
+
     def __or__(self: TPipeline, tool: Tool) -> TPipeline:
         self.tools.append(tool)
         return self
@@ -652,10 +658,8 @@ class PipelineError(Exception):
         super().__init__(self.message)
 
 
-# TODO: Make command inherit from abc.Sequence.
-
 @dataclass
-class Command:
+class Command(abc.Sequence):
     """The commands to be executed.
 
     Attributes
@@ -673,10 +677,10 @@ class Command:
     def __init__(self, *args: SupportsStr) -> None:
         self.args = [str(arg) for arg in args if arg]
 
-    def __iter__(self) -> Generator[str, None, None]:
-        return (arg for arg in self.args)
+    def __len__(self):
+        return len(self.args)
 
-    def __getitem__(self, idx: int) -> str:
+    def __getitem__(self, idx) -> Any:
         return self.args[idx]
 
     def __str__(self) -> str:
@@ -689,8 +693,12 @@ class Command:
             verbose: This bool should be True only when the args
               correspond to a tool.
         """
-        process = subprocess.Popen(self.args, text=True, stdout=subprocess.PIPE,
-                                   stderr=subprocess.PIPE)
+        process = subprocess.Popen(
+            self.args,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
         if verbose:
             dynamic_print(process)
         return process
@@ -725,9 +733,9 @@ class Output:
     saga_executable: Union[SAGA, Library, Tool]
     completed_process: subprocess.Popen
     ignore_stderr: bool
-    stdout: Union[str, None] = field(init=False, default=None)
-    stderr: Union[str, None] = field(init=False, default=None)
-    stdin: Union[str, None] = field(init=False, default=None)
+    stdout: Optional[str] = field(init=False, default=None)
+    stderr: Optional[str] = field(init=False, default=None)
+    stdin: Optional[str] = field(init=False, default=None)
 
     def __post_init__(self) -> None:
         if self.completed_process.stdout is not None:
@@ -743,6 +751,12 @@ class Output:
 
 @dataclass
 class ToolOutput(Output):
+
+    @property
+    def rasters(self):
+        assert isinstance(self.saga_executable, Tool)
+        return [raster for raster in self.saga_executable.parameters
+                if True]
 
     @overload
     def get_raster(  # type: ignore
@@ -799,7 +813,7 @@ class ToolOutput(Output):
         )
 
 
-def get_saga_version(saga: SAGA) -> Union[str, None]:
+def get_saga_version(saga: SAGA) -> Optional[tuple[int, int, int]]:
     """Get's the SAGA version using the version flag."""
     saga.flag = 'version'
     stdout = saga.execute().stdout
@@ -808,23 +822,27 @@ def get_saga_version(saga: SAGA) -> Union[str, None]:
     pattern = r'\d+\.\d+\.\d+'
     match = re.search(pattern, stdout)
     if match:
-        return match.group(0)
+        maj, min_, patch = tuple(map(int, match.group(0).split('.')))
+        return (maj, min_, patch)
     else:
         print(
             f'Could not parse SAGA version from stdout {stdout}.',
             'To make use of all the functionality of the package,',
             'Instantiate the "SAGA" object with a version parameter.'
         )
-        return  # type: ignore
+        return None
 
 
-def get_formats(saga: SAGA, type_: Literal['raster', 'vector']):
+def get_formats(
+        saga: SAGA,
+        type_: Literal['raster', 'vector']
+) -> Optional[set[str]]:
     """Get's the possible raster or vector file extensions.
 
     Requires SAGA >= 4.0.0.
     """
-    if saga.version is None or int(saga.version[0]) < 4:
-        return  # type: ignore
+    if saga.version is None or saga.version[0] < 4:
+        return None
     gdal_formats = saga / 'io_gdal' / 10
 
     # Create an empty temporary file.
