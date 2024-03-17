@@ -528,7 +528,7 @@ class Tool(SAGAExecutable):
     def get_verbose_message(self) -> str:
         string = []
         string.extend(['-'*25, '\n'])
-        string.extend([str(self.library), ' ', str(self), '\n'])
+        string.extend([str(self.library), ' / ', str(self), '\n'])
         string.extend(['    ', str(self.parameters), '\n'])
         return ''.join(str(element) for element in string)
 

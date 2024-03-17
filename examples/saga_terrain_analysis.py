@@ -262,14 +262,16 @@ class TerrainAnalysis(Executable):
             length=self.out_dir / 'fpl.tif',
             seeds_only=0,
             method=1,
-            convergence=1.1
+            convergence=1.1,
+            verbose=True
         )
 
     def slope_length(self) -> ToolOutput:
         tool = self.hydrology / 'Slope Length'
         return tool.execute(
             dem=self.dem,
-            length=self.out_dir / 'spl.tif'
+            length=self.out_dir / 'spl.tif',
+            verbose=True
         )
 
     def cell_balance(self) -> ToolOutput:
@@ -279,7 +281,8 @@ class TerrainAnalysis(Executable):
             # weights=None,
             weights_default=1,
             balance=self.out_dir / 'cbl.tif',
-            method=1
+            method=1,
+            verbose=True
         )
 
     def saga_wetness_index(self) -> ToolOutput:
@@ -296,7 +299,8 @@ class TerrainAnalysis(Executable):
             slope_type=1,
             slope_min=0,
             slope_off=0.1,
-            slope_weight=1
+            slope_weight=1,
+            verbose=True
         )
 
 
