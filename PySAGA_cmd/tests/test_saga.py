@@ -4,7 +4,8 @@ from PySAGA_cmd.saga import (
     SAGA,
     Library,
     Tool,
-    Parameters
+    Parameters,
+    ToolOutput
 )
 from PySAGA_cmd.utils import get_sample_dem
 
@@ -103,25 +104,29 @@ class TestTool:
 class TestParameters:
 
     def test_parameters(self, tmp_path: Path):
+        tool = SAGA_ / 'ta_morphometry' / 0
         elevation = tmp_path / 'elevation.tif'
         slope = tmp_path / 'slope.tif'
         params = Parameters(
+            tool=tool,
             elevation=elevation,
             slope=slope
         )
-        assert params['elevation'] == elevation
-        assert params['slope'] == slope
+        assert params['elevation'] == str(elevation)
+        assert params['slope'] == str(slope)
         assert params.formatted[-2] == f'-ELEVATION={str(elevation)}'
         assert params.formatted[-1] == f'-SLOPE={str(slope)}'
 
     def test_parameters_temp(self, tmp_path: Path):
+        tool = SAGA_ / 'ta_morphometry' / 0
         elevation = tmp_path / 'elevation.tif'
-        slope = tmp_path / 'temp.tif'
+        slope = 'temp.tif'
         params = Parameters(
+            tool=tool,
             elevation=elevation,
             slope=slope
         )
-        assert params['slope'] != 'temp.tif'
+        assert params['slope'] != str(slope)
 
 
 class TestPipeline:
@@ -149,7 +154,7 @@ class TestPipeline:
 
 class TestExecution:
 
-    def test_tool_execution(self, tmpdir: str):
+    def test_tool_execution_raster(self, tmpdir: str):
         dem = get_sample_dem()
         hydro_preproc_dem = Path(tmpdir) / ''.join(['preproc_', dem.name])
 
@@ -173,7 +178,36 @@ class TestExecution:
                               flow=hydro_preproc_dem)
         )
         outputs = pipe.execute(verbose=False)
+        print(route_detection.parameters)
         assert len(outputs) == 3
         assert Path(route_detection.sinkroute).exists()
         assert Path(sink_removal.dem_preproc).exists()
         assert hydro_preproc_dem.exists()
+        assert all(
+            isinstance(output, ToolOutput) for output in outputs
+        )
+        assert len(outputs[0].rasters) == 2
+        assert len(outputs[1].rasters) == 3
+        assert len(outputs[2].rasters) == 2
+        assert len(outputs[0].files) == 2
+        assert len(outputs[1].files) == 3
+        assert len(outputs[2].files) == 2
+
+    def test_tool_execution_vector(self):
+        dem = get_sample_dem()
+        contour_lines = 'temp.shp'
+        contour_polygons = 'temp.shp'
+
+        tool = SAGA_ / 'shapes_grid' / 'Contour Lines from Grid'
+
+        output = tool.execute(
+            grid=dem,
+            contour=contour_lines,
+            polygons=contour_polygons,
+            zstep=30,
+            zmin=150,
+            zmac=450
+        )
+        assert len(output.vectors) == 2
+        assert len(output.rasters) == 1
+        assert len(output.files) == 3

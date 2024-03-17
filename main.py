@@ -40,7 +40,7 @@ def main():
 
     # If you also install the extra dependencies, the following lines
     # of code are available and you can plot your output rasters.
-    raster = outputs[-1].get_raster('flow')
+    raster = outputs[-1].rasters['flow']
     raster = raster.plot(cmap='Blues', norm='log',
                          cbar_kwargs=dict(label='log of accumulated flow'))
     raster.set_title('Flow accumulation map')

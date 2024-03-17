@@ -11,13 +11,10 @@ from typing import (
     Union,
     Optional,
     Protocol,
-    Sequence,
     Iterable,
     TypeVar,
-    overload,
     Any,
     runtime_checkable,
-    TYPE_CHECKING,
     Literal,
 )
 from pathlib import Path
@@ -44,13 +41,10 @@ from PySAGA_cmd.utils import (
     infer_file_extension,
     dynamic_print,
 )
-
-
-if TYPE_CHECKING:
-    from .objects import (
-        Raster,
-        Vector
-    )
+from PySAGA_cmd.objects import (
+    Raster,
+    Vector
+)
 
 
 def temp_dir():
@@ -141,6 +135,7 @@ class Parameters(UserDict[str, str]):
 
     Parameters
     ----------
+    tool: The SAGA Tool to which the parameters correspond.
     **kwargs: The tool parameters as keyword arguments. For example,
       'elevation=/path/to/raster' could be a keyword argument.
 
@@ -157,10 +152,31 @@ class Parameters(UserDict[str, str]):
     -ELEVATION=path/to/raster -GRID=path/to/grid -METHOD=0
     """
 
-    def __init__(self, **kwargs: SupportsStr) -> None:
-        # for param, value in kwargs.items():
-        #     kwargs[param] = str(value)
-        super().__init__(**kwargs)
+    def __init__(self, tool: Tool, **kwargs: SupportsStr) -> None:
+        self.tool = tool
+        # Converts parameter values to str
+        super().__init__()
+        for param, value in kwargs.items():
+            self[param] = value
+
+    def __setitem__(self, param: str, value: SupportsStr) -> None:
+        """Always converts value to string.
+
+        It also replaces 'temp' named files with a temporary path.
+        """
+        value = str(value)
+        path = Path(value)
+        exists = path.exists()
+        suffix = path.suffix
+        if path.stem == 'temp' and not exists:
+            unix = str(time.time()).split('.', maxsplit=1)[0]
+            value = str(
+                self.tool.library.saga.temp_dir / f'{param}_{unix}{suffix}'
+            )
+        elif exists and not suffix:
+            suffix = infer_file_extension(path).suffix
+            value = str(path.with_suffix(suffix))
+        return super().__setitem__(param, value)
 
     def __str__(self) -> str:
         return ' '.join(self.formatted)
@@ -168,7 +184,7 @@ class Parameters(UserDict[str, str]):
     @property
     def formatted(self) -> list[str]:
         return (
-            [f'-{param.upper()}={str(value)}' for param, value in self.items()]
+            [f'-{param.upper()}={value}' for param, value in self.items()]
         )
 
 
@@ -273,7 +289,14 @@ class SAGA(SAGAExecutable):
 
     def get_raster_formats(self):
         if self._raster_formats is None:
-            self._raster_formats = get_formats(self, type_='raster')
+            formats = get_formats(self, type_='raster')
+            if formats is None:
+                formats = set()
+            # '.sdat', '.sgrd', '.sg-grd-z' are not included in the output
+            # of 'GDAL Formats'.
+            self._raster_formats = formats.union(
+                ['sdat', 'sgrd', 'sg-grd-z']
+            )
         return self._raster_formats
 
     def get_vector_formats(self):
@@ -454,11 +477,11 @@ class Tool(SAGAExecutable):
 
     library: Library
     tool: str
-    parameters: Parameters = field(default_factory=Parameters)
+    parameters: Parameters = field(init=False)
 
     def __post_init__(self) -> None:
         self._flag = self.library.flag
-        self.parameters = Parameters()
+        self.parameters = Parameters(self)
 
     def __str__(self):
         return self.tool
@@ -467,7 +490,7 @@ class Tool(SAGAExecutable):
         """Uses keyword argument to define the tool parameters."""
         if self.parameters:
             self._del_attr_params()
-        self.parameters = Parameters(**kwargs)
+        self.parameters = Parameters(self, **kwargs)
         self._set_attr_params()
         return self
 
@@ -478,21 +501,9 @@ class Tool(SAGAExecutable):
             delattr(self, param)
 
     def _set_attr_params(self):
-        """Sets the parameters of the tool as attributes.
-
-        Besides setting attributes, it also replaces 'temp'
-        values with a temporary file location.
-        """
+        """Sets the parameters of the tool as attributes."""
         for param, value in self.parameters.items():
-            value = str(value)
-            val_as_path = Path(value)
-            if val_as_path.stem == 'temp':
-                suffix = val_as_path.suffix
-                unix = str(time.time()).split('.', maxsplit=1)[0]
-                self.parameters[param] = str(
-                    self.library.saga.temp_dir / f'{param}_{unix}{suffix}'
-                )
-            setattr(self, param, self.parameters[param])
+            setattr(self, param, value)
 
     def __getattr__(self, name: str) -> Any:
         pass
@@ -535,13 +546,6 @@ class Tool(SAGAExecutable):
         """
         if kwargs:
             self(**kwargs)
-
-        # Add this for loop in another func.
-        for param, value in self.parameters.items():
-            value_as_path = Path(str(value))
-            if value_as_path.parent.exists() and not value_as_path.suffix:
-                value = str(infer_file_extension(value_as_path))
-                self.parameters[param] = value
 
         command_partial = partial(self.command.execute, verbose)
         saga = self.library.saga
@@ -740,8 +744,10 @@ class Output:
     def __post_init__(self) -> None:
         if self.completed_process.stdout is not None:
             self.stdout = self.completed_process.stdout.read()
-        if (stderr := self.completed_process.stderr) is not None and \
-           (read := stderr.read().strip()):
+        if (
+            (stderr := self.completed_process.stderr) is not None
+            and (read := stderr.read().strip())
+        ):
             if not self.ignore_stderr:
                 raise ExecutionError(read, self.saga_executable)
             self.stderr = read
@@ -749,68 +755,67 @@ class Output:
             self.stdin = self.completed_process.stdin.read()
 
 
+Files = dict[str, Union[Path, Raster, Vector]]
+
+
 @dataclass
 class ToolOutput(Output):
+    saga_executable: Tool
+    _outputs: Optional[Files] = field(init=False, default=None)
+
+    # TODO: add support for output tables aswell.
 
     @property
-    def rasters(self):
-        assert isinstance(self.saga_executable, Tool)
-        return [raster for raster in self.saga_executable.parameters
-                if True]
+    def rasters(self) -> dict[str, Raster]:
+        def filtering_func(pair) -> bool:
+            return isinstance(pair[1], Raster)
+        filtered = filter(filtering_func, self.files.items())
+        return dict(filtered)  # type: ignore
 
-    @overload
-    def get_raster(  # type: ignore
-        self,
-        parameters: str
-    ) -> Raster: ...
+    def is_raster(self, path: Path) -> bool:
+        formats = self.saga_executable.library.saga._raster_formats
+        assert path.exists()
+        if formats is not None and path.suffix.strip('.') in formats:
+            return True
+        return False
 
-    @overload
-    def get_raster(
-        self,
-        parameters: Sequence[str]
-    ) -> list[Raster]: ...
+    @property
+    def vectors(self) -> dict[str, Vector]:
+        def filtering_func(pair) -> bool:
+            return isinstance(pair[1], Vector)
+        filtered = filter(filtering_func, self.files.items())
+        return dict(filtered)  # type: ignore
 
-    def get_raster(
-        self,
-        parameters: Union[str, Sequence[str]]
-    ) -> Union[Raster, list[Raster]]:
+    def is_vector(self, path: Path) -> bool:
+        formats = self.saga_executable.library.saga._vector_formats
+        assert path.exists()
+        if formats is not None and path.suffix.strip('.') in formats:
+            return True
+        return False
 
-        from .objects import Raster
+    @property
+    def files(self) -> Files:
+        if self._outputs is None:
+            self._outputs = self.get_files()
+        return self._outputs
 
-        assert isinstance(self.saga_executable, Tool)
-        if isinstance(parameters, str):
-            return Raster(self.saga_executable.parameters[parameters])
-        return (
-            [Raster(v) for k, v in self.saga_executable.parameters.items()
-             if k in parameters]
-        )
-
-    @overload
-    def get_vector(  # type: ignore
-        self,
-        parameters: str
-    ) -> Vector: ...
-
-    @overload
-    def get_vector(
-        self,
-        parameters: Sequence[str]
-    ) -> list[Vector]: ...
-
-    def get_vector(
-        self,
-        parameters: Union[Sequence[str], str]
-    ) -> Union[list[Vector], Vector]:
-
-        from .objects import Vector
-
-        assert isinstance(self.saga_executable, Tool)
-        if isinstance(parameters, str):
-            return Vector(self.saga_executable.parameters[parameters])
-        return (
-            [Vector(v) for k, v in self.saga_executable.parameters.items()
-             if k in parameters]
-        )
+    def get_files(self) -> Files:
+        outputs: Files = {}
+        for param, value in self.saga_executable.parameters.items():
+            try:
+                path = Path(value)
+            except Exception:
+                continue
+            else:
+                if not path.is_file():
+                    continue
+                if self.is_raster(path):
+                    outputs[param] = Raster(path)
+                elif self.is_vector(path):
+                    outputs[param] = Vector(path)
+                else:
+                    outputs[param] = path
+        return outputs
 
 
 def get_saga_version(saga: SAGA) -> Optional[tuple[int, int, int]]:
