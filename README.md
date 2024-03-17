@@ -19,8 +19,10 @@ Before you can use this package, you need to locate the **saga_cmd** in your sys
 Accesing tools can be done with the **truediv** operator (the forward slash **/**), like in the example below.
 
 ```python
-from PySAGA_cmd import SAGA
-from PySAGA_cmd.utils import get_sample_dem
+from PySAGA_cmd import (
+    SAGA,
+    get_sample_dem
+)
 
 
 saga = SAGA('/usr/bin/saga_cmd')
@@ -95,7 +97,9 @@ saga.temp_dir_cleanup()
 
 ### Plotting
 
-After the execution of a *Tool*, we can use the returned *Output* object to plot the results.
+After the execution of a **Tool**, we can use the returned **Output** object to plot the results.
+
+*The below example can be accessed [here](https://github.com/alecsandrei/PySAGA-cmd/blob/master/examples/plot.py).*
 
 ```python
 # If you set a flag to the SAGA object that would stop the tool
@@ -103,21 +107,20 @@ After the execution of a *Tool*, we can use the returned *Output* object to plot
 # the tools, like so:
 saga.flag = None
 
+import matplotlib.pyplot as plt
+from matplotlib import gridspec
+
 # Defining tools.
-slope_aspect_curvature = saga / 'ta_morphometry' / 0  # We can also use tool indices to access.
+slope_aspect_curvature = saga / 'ta_morphometry' / 0  # We can also use tool indices to access tools.
 shading = saga / 'ta_lighting' / 'Analytical Hillshading'
 
 # Executing tools.
 output1 = slope_aspect_curvature.execute(verbose=True, elevation=dem, slope='temp.sdat')
-elevation, slope = output1.get_raster(['elevation', 'slope'])
+elevation = output1.rasters['elevation']
+slope = output1.rasters['slope']
 
 output2 = shading.execute(verbose=True, elevation=dem, shade='temp.sdat', method='5')
-shading = output2.get_raster('shade')
-
-
-import matplotlib.pyplot as plt
-from matplotlib import gridspec
-
+shading = output2.rasters['shade']
 
 fig = plt.figure(figsize=(15, 10))
 
@@ -133,17 +136,24 @@ slope.plot(ax=ax2, cmap='rainbow', cbar_kwargs=dict(label='Radians'))
 shading.plot(ax=ax1, cbar=False, alpha=0.45)
 ax1.set_title('Elevation map')
 ax2.set_title('Slope map')
- 
+
 # Histograms
 hist_kwargs = {
     'bins': 15, 'alpha': 0.65,
-    'facecolor': '#2ab0ff', 'edgecolor':'#169acf',
+    'facecolor': '#2ab0ff', 'edgecolor': '#169acf',
     'linewidth': 0.5
 }
 elevation.hist(ax=ax3, **hist_kwargs)
+ax3.set_ylabel('Count')
+ax3.set_xlabel('Elevation')
 slope.hist(ax=ax4, **hist_kwargs)
- 
+ax4.set_ylabel('Count')
+ax4.set_xlabel('Radians')
+
 plt.tight_layout()
+plt.show()
+
+fig.savefig('../assets/plot1.png', dpi=300, bbox_inches='tight')
 
 saga.temp_dir_cleanup()
 ```

@@ -1,8 +1,10 @@
 import os
 from pathlib import Path
 
-from PySAGA_cmd import SAGA
-from PySAGA_cmd.utils import get_sample_dem
+from PySAGA_cmd import (
+    SAGA,
+    get_sample_dem
+)
 import matplotlib.pyplot as plt
 from matplotlib import gridspec
 
@@ -21,10 +23,11 @@ if __name__ == '__main__':
 
     # Executing tools.
     output1 = slope_aspect_curvature.execute(verbose=True, elevation=dem, slope='temp.sdat')
-    elevation, slope = output1.get_raster(['elevation', 'slope'])
+    elevation = output1.rasters['elevation']
+    slope = output1.rasters['slope']
 
     output2 = shading.execute(verbose=True, elevation=dem, shade='temp.sdat', method='5')
-    shading = output2.get_raster('shade')
+    shading = output2.rasters['shade']
 
     fig = plt.figure(figsize=(15, 10))
 
@@ -48,9 +51,14 @@ if __name__ == '__main__':
         'linewidth': 0.5
     }
     elevation.hist(ax=ax3, **hist_kwargs)
+    ax3.set_ylabel('Count')
+    ax3.set_xlabel('Elevation')
     slope.hist(ax=ax4, **hist_kwargs)
+    ax4.set_ylabel('Count')
+    ax4.set_xlabel('Radians')
 
     plt.tight_layout()
+    plt.show()
 
     fig.savefig('../assets/plot1.png', dpi=300, bbox_inches='tight')
 

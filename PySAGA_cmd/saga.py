@@ -361,7 +361,7 @@ class SAGA(SAGAExecutable):
         library_ = self.get_library(library)
         return Tool(library=library_, tool=tool)
 
-    def execute(self, ignore_stderr: bool = False) -> Output:
+    def execute(self, ignore_stderr: bool = True) -> Output:
         """Executes the command.
 
         Args:
@@ -431,7 +431,7 @@ class Library(SAGAExecutable):
         """
         return Tool(library=self, tool=tool)
 
-    def execute(self, ignore_stderr: bool = False) -> Output:
+    def execute(self, ignore_stderr: bool = True) -> Output:
         """Executes the command.
 
         Args:

@@ -156,7 +156,9 @@ class TestExecution:
 
     def test_tool_execution_raster(self, tmpdir: str):
         dem = get_sample_dem()
-        hydro_preproc_dem = Path(tmpdir) / ''.join(['preproc_', dem.name])
+        hydro_preproc_dem = (
+            Path(tmpdir) / ''.join(['preproc_', Path(str(dem)).name])
+        )
 
         del SAGA_.flag
         # Defining libraries

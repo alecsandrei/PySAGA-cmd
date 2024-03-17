@@ -2,8 +2,10 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 
-from PySAGA_cmd.saga import SAGA
-from PySAGA_cmd.utils import get_sample_dem
+from PySAGA_cmd import (
+    SAGA,
+    get_sample_dem
+)
 
 
 def main():

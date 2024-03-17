@@ -225,11 +225,6 @@ class SAGACMDSearcher:
         return None
 
 
-def get_sample_dem() -> Path:
-    """Get a sample DEM of an area in North-Eastern Romania."""
-    return HERE / '../assets/DEM_30m.tif'
-
-
 def depends(func: Callable):
     """A decorator to handle missing modules."""
     def wrapper(*args, **kwargs):

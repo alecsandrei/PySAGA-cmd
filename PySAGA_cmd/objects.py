@@ -24,6 +24,8 @@ if TYPE_CHECKING:
     import matplotlib.axes as axes
 
 
+HERE = Path(__file__).parent
+
 PathLike = Union[str, os.PathLike]
 
 
@@ -42,10 +44,8 @@ class Raster:
     to_numpy: Returns the Raster object as a np.array.
     """
 
-    path: PathLike
-
-    def __post_init__(self):
-        self.path = Path(self.path)
+    def __init__(self, path: PathLike):
+        self.path = Path(path)
         if not self.path.suffix:
             self.path = infer_file_extension(self.path)
 
@@ -191,10 +191,8 @@ class Vector:
     plot: Plots the vector object.
     """
 
-    path: PathLike
-
-    def __post_init__(self):
-        self.path = Path(self.path)
+    def __init__(self, path: PathLike):
+        self.path = Path(path)
         if not self.path.suffix:
             self.path = infer_file_extension(self.path)
 
@@ -223,3 +221,8 @@ class Vector:
             **kwargs
         )
         return ax
+
+
+def get_sample_dem() -> Raster:
+    """Get a sample DEM of an area in North-Eastern Romania."""
+    return Raster(HERE / '../assets/DEM_30m.tif')

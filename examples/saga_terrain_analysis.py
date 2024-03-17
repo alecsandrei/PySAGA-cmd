@@ -1,8 +1,12 @@
 from pathlib import Path
 from typing import (
     Callable,
-    Optional
+    Optional,
+    TYPE_CHECKING
 )
+
+if TYPE_CHECKING:
+    from PySAGA_cmd.objects import Raster
 
 from PySAGA_cmd.saga import (
     SAGA,
@@ -10,16 +14,16 @@ from PySAGA_cmd.saga import (
     ToolOutput,
     Executable
 )
-from PySAGA_cmd.utils import get_sample_dem
+from PySAGA_cmd import get_sample_dem
 
 
 class TerrainAnalysis(Executable):
     """This class can be used to calculate terrain analysis grids."""
 
-    def __init__(self, dem: Path, saga_cmd_path: Optional[Path] = None):
+    def __init__(self, dem: Raster, saga_cmd_path: Optional[Path] = None):
         self.saga = SAGA(saga_cmd_path)
         self.dem = dem
-        self.out_dir = self.dem.parent
+        self.out_dir = Path(self.dem.path).parent
 
         self.tools: list[Callable[[], ToolOutput]] = [
             self.index_of_convergence,
