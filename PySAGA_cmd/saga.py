@@ -118,7 +118,7 @@ class Flag:
         if self.flag is None:
             return ''
         if isinstance(self.flag, str) and not self.flag.startswith('--'):
-            return ''.join(['--' + self.flag])
+            return ''.join(['--', self.flag])
         return self.flag
 
     def __bool__(self) -> bool:
@@ -154,15 +154,15 @@ class Parameters(UserDict[str, str]):
 
     def __init__(self, tool: Tool, **kwargs: SupportsStr) -> None:
         self.tool = tool
-        # Converts parameter values to str
         super().__init__()
+        # Converts parameter values to str.
         for param, value in kwargs.items():
             self[param] = value
 
     def __setitem__(self, param: str, value: SupportsStr) -> None:
         """Always converts value to string.
 
-        It also replaces 'temp' named files with a temporary path.
+        It also replaces 'temp' named files with a temporary unique path.
         """
         value = str(value)
         path = Path(value)
@@ -240,7 +240,7 @@ class SAGA(SAGAExecutable):
     saga_cmd: The file path to the 'saga_cmd' file or a SAGACMD object.
     For information on where to find it, check the following link:
       https://sourceforge.net/projects/saga-gis/files/SAGA%20-%20Documentation/Tutorials/Command_Line_Scripting/.
-    version: The version of SAGAGIS.
+    version: The version of SAGA GIS.
 
     Attributes
     ----------
@@ -260,6 +260,8 @@ class SAGA(SAGAExecutable):
     execute: Executes the command. To see the command that will be
       executed, check the 'command' property of this class.
     temp_dir_cleanup: Deletes the temporary directory.
+    get_raster_formats: Get the raster extensions allowed by GDAL.
+    get_vector_formats: Get the vector extensions allowed by GDAL.
     """
 
     saga_cmd: Optional[Union[PathLike, SAGACMD]] = field(default=None)
@@ -458,7 +460,6 @@ class Tool(SAGAExecutable):
 
     Attributes
     ----------
-    saga_cmd: A 'SAGACMD' object describing the 'saga_cmd' executable.
     flag: A 'Flag' object describing the flag that will be used when
       executing the command.
     command: The command that will be executed with the 'execute' method.
@@ -524,6 +525,13 @@ class Tool(SAGAExecutable):
     def __or__(self, tool: Tool) -> Pipeline:
         return Pipeline(self) | (tool)
 
+    def get_verbose_message(self) -> str:
+        string = []
+        string.extend(['-'*25, '\n'])
+        string.extend([str(self.library), ' ', str(self), '\n'])
+        string.extend(['    ', str(self.parameters), '\n'])
+        return ''.join(str(element) for element in string)
+
     def execute(
         self,
         verbose: bool = False,
@@ -546,6 +554,9 @@ class Tool(SAGAExecutable):
         """
         if kwargs:
             self(**kwargs)
+
+        if verbose:
+            print(self.get_verbose_message())
 
         command_partial = partial(self.command.execute, verbose)
         saga = self.library.saga
@@ -638,21 +649,12 @@ class Pipeline(Executable, abc.Sequence):
         """
         outputs = []
         for tool in self.tools:
-            print(self._format_tool_string(tool))
             output = tool.execute(verbose=verbose, ignore_stderr=ignore_stderr)
             outputs.append(output)
         return outputs
 
-    @staticmethod
-    def _format_tool_string(tool: Tool) -> str:
-        string = []
-        string.extend(['-'*25, '\n'])
-        string.extend([str(tool.library), ' ', str(tool), '\n'])
-        string.extend(['    ', str(tool.parameters), '\n'])
-        return ''.join(str(element) for element in string)
-
     def __str__(self) -> str:
-        string = [self._format_tool_string(tool) for tool in self.tools]
+        string = [tool.get_verbose_message() for tool in self.tools]
         return ''.join(str(element) for element in string)
 
 
