@@ -7,7 +7,7 @@ from PySAGA_cmd.saga import (
     Parameters,
     ToolOutput
 )
-from PySAGA_cmd.utils import get_sample_dem
+from PySAGA_cmd import get_sample_dem
 
 
 # In order to run the tests, saga_cmd needs to be found.

@@ -716,6 +716,7 @@ class Output:
 
     Parameters
     ----------
+    saga_executable: A SAGA, Library or Tool object.
     completed_process: A 'CompletedProcess' object that was returned by
       a command execution.
     ignore_stderr: Whether or not the presence of a stderr raises an error.
@@ -725,15 +726,6 @@ class Output:
     stdout: The 'stdout' attribute of the 'CompletedProcess' object as string.
     stderr: The 'stderr' attribute of the 'CompletedProcess' object as string.
     stdin: The 'stdin' attribute of the 'CompletedProcess' object as string.
-
-    Methods
-    ----------
-    get_raster: Takes as input a parameter. Check the 'parameters' attribute
-      of this class to see available parameters. Returns a 'Raster' object
-      or a list of them.
-    get_vector: Takes as input a parameter. Check the 'parameters' attribute
-      of this class to see available parameters. Returns a 'Vector' object
-      or a list of them.
     """
 
     saga_executable: Union[SAGA, Library, Tool]
@@ -762,6 +754,27 @@ Files = dict[str, Union[Path, Raster, Vector]]
 
 @dataclass
 class ToolOutput(Output):
+    """Describes the output of the execution of a Tool.
+
+    Parameters
+    ----------
+    saga_executable: A Tool object.
+    completed_process: A 'CompletedProcess' object that was returned by
+      a command execution.
+    ignore_stderr: Whether or not the presence of a stderr raises an error.
+
+    Attributes
+    ----------
+    stdout: The 'stdout' attribute of the 'CompletedProcess' object as string.
+    stderr: The 'stderr' attribute of the 'CompletedProcess' object as string.
+    stdin: The 'stdin' attribute of the 'CompletedProcess' object as string.
+    rasters: The outputs identified as rasters (according to
+      their file extension).
+    vectors: The outputs identified as vectors (according to
+      their file extension).
+    files: All of the output files.
+    """
+
     saga_executable: Tool
     _outputs: Optional[Files] = field(init=False, default=None)
 
@@ -820,7 +833,7 @@ class ToolOutput(Output):
         return outputs
 
 
-def get_saga_version(saga: SAGA) -> Optional[tuple[int, int, int]]:
+def get_saga_version(saga: SAGA) -> Optional[MajMinPatch]:
     """Get's the SAGA version using the version flag."""
     saga.flag = 'version'
     stdout = saga.execute().stdout

@@ -52,7 +52,6 @@ class Raster:
     def __str__(self):
         return os.fspath(self.path)
 
-    @depends
     def _read_raster(
         self,
         nodata: Union[SupportsFloat, Iterable[SupportsFloat]] = -32768.0
