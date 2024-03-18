@@ -107,7 +107,7 @@ class Flag:
 
     Parameters
     ----------
-    flag: The flag to use when executing the objects. Examples of flags include:
+    flag: The flag to use when executing the objects. Examples of flags are:
       'cores=8', 'flags=s', 'help', 'version' etc. Check the SAGA GIS
       documentation if you want to find out more about flags.
     """
