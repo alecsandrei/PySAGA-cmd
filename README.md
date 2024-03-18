@@ -43,17 +43,17 @@ Executing an object is straight forward and is done using the **execute** method
 ```python
 # Executing the SAGA object. Useful when you want to see the available libraries.
 saga_output = saga.execute()
-print(saga_output.text)
+print(saga_output.stdout)
 
 # Executing the Library object. Useful when you want to see the available tools.
 preprocessor_output = preprocessor.execute()
-print(preprocessor_output.text)
+print(preprocessor_output.stdout)
 
 # Executing a Tool object.
 dem = get_sample_dem()
 output = 'path/to/output.sdat'
 output = route_detection.execute(verbose=True, elevation=dem, sinkroute=output)
-print(output.text)
+print(output.stdout)
 ```
 
 ### Using flags
@@ -62,7 +62,7 @@ You can provide flags for SAGA, Library and Tool objects. To see what kind of fl
 
 ```python
 saga.flag = 'help'
-print(saga.execute().text)
+print(saga.execute().stdout)
 ```
 
 ### Chaining commands
