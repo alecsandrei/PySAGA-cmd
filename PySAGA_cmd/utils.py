@@ -134,7 +134,7 @@ def dynamic_print(popen: subprocess.Popen[str]):
 
 
 def progress_bar_gen(
-        size: int = 60
+    size: int = 60
 ) -> Generator[None, Optional[int], None]:
     count = 100
     size = 60
