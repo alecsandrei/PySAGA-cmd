@@ -149,7 +149,13 @@ def progress_bar_gen(
         elif j < 100:
             j %= 100
         x = int(size*j/count)
-        print(f"[{u'█'*x}{('.'*(size-x))}] {j}/{count}%", end='\r', file=out)
+
+        print(
+            f"[{u'█'*x}{('.'*(size-x))}] {j}/{count}% {len(str(j))*' '}",
+            end='\r',
+            flush=True,
+            file=out
+        )
 
 
 class NotExecutableError(Exception):
