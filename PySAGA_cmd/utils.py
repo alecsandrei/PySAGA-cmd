@@ -2,15 +2,16 @@
 
 from __future__ import annotations
 
+import re
 import os
 import sys
 import subprocess
 from typing import (
     Union,
     Iterable,
-    Literal,
     Callable,
     Optional,
+    Generator
 )
 from pathlib import Path
 from enum import (
@@ -112,6 +113,8 @@ def infer_file_extension(path_to_file: Path) -> Path:
 
 
 def dynamic_print(popen: subprocess.Popen[str]):
+    progress_bar = progress_bar_gen()
+    progress_bar.send(None)
     while True:
         if popen.stdout is None:
             break
@@ -122,15 +125,31 @@ def dynamic_print(popen: subprocess.Popen[str]):
             output = output.strip()
             if '%' not in output:
                 continue
-            print(output.strip(), end=print_end(output), flush=True)
+            # print(output.strip(), end=print_end(output), flush=True)
+            output_digits = re.match(r'\d+', output)
+            if output_digits is not None:
+                progress_bar.send(int(output_digits.group(0)))
+    print()
     return popen.poll()
 
 
-def print_end(string: str) -> Literal['\n', '\r']:
-    """The 'end' parameter is a newline or a carriage return character."""
-    if '100' in string or any(char.isalpha() for char in string):
-        return '\n'
-    return '\r'
+def progress_bar_gen(
+        size: int = 60
+) -> Generator[None, Optional[int], None]:
+    count = 100
+    size = 60
+    j = 0
+    out = sys.stdout
+    while True:
+        j = yield  # type: ignore
+        if j is None:
+            continue
+        elif j > 100:
+            j = 100
+        elif j < 100:
+            j %= 100
+        x = int(size*j/count)
+        print(f"[{u'█'*x}{('.'*(size-x))}] {j}/{count}%", end='\r', file=out)
 
 
 class NotExecutableError(Exception):
