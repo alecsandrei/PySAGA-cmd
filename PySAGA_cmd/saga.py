@@ -40,6 +40,8 @@ from PySAGA_cmd.utils import (
     search_saga_cmd,
     infer_file_extension,
     dynamic_print,
+    USER_PLATFORM,
+    Platforms
 )
 from PySAGA_cmd.objects import (
     Raster,
@@ -699,11 +701,22 @@ class Command(abc.Sequence):
             verbose: This bool should be True only when the args
               correspond to a tool.
         """
+
+        # Inspired by something I saw in pdf2image source code.
+        # It should stop saga_cmd from opening the cmd window on Windows.
+        startupinfo = None
+        if USER_PLATFORM == Platforms.WINDOWS:
+            startupinfo = subprocess.STARTUPINFO()  # type: ignore
+            startupinfo.dwFlags |= (
+                subprocess.STARTF_USESHOWWINDOW  # type: ignore
+            )
+
         process = subprocess.Popen(
             self.args,
             text=True,
             stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
+            stderr=subprocess.PIPE,
+            startupinfo=startupinfo
         )
         if verbose:
             dynamic_print(process)
