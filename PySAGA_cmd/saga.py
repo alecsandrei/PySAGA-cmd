@@ -133,7 +133,7 @@ class Flag:
 class Parameters(UserDict[str, str]):
     """The SAGA GIS tool parameters.
 
-    This object inherits from 'dict'.
+    This object inherits from 'UserDict'.
 
     Parameters
     ----------
