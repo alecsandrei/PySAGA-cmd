@@ -174,6 +174,18 @@ class Raster:
             self._read_raster(nodata=nodata)[1]
         )
 
+    @depends
+    def to_dataarray(self, **open_datarray_kwargs):
+        """Converts to """
+        import xarray
+        import rioxarray  # noqa
+
+        return xarray.open_dataarray(
+            self.path,
+            engine='rasterio',
+            **open_datarray_kwargs
+        )
+
 
 @dataclass
 class Vector:
