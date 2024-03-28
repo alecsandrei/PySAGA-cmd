@@ -22,6 +22,7 @@ if TYPE_CHECKING:
     import numpy as np
     import rasterio as rio  # type: ignore
     import matplotlib.axes as axes
+    import xarray
 
 
 HERE = Path(__file__).parent
@@ -169,14 +170,14 @@ class Raster:
         self,
         nodata: Union[SupportsFloat, Iterable[SupportsFloat]] = -32768.0
     ):
-        """Returns the raster as a numpy array."""
+        """Converts Raster to a np.array object."""
         return (
             self._read_raster(nodata=nodata)[1]
         )
 
     @depends
-    def to_dataarray(self, **open_datarray_kwargs):
-        """Converts to """
+    def to_dataarray(self, **open_datarray_kwargs) -> xarray.DataArray:
+        """Converts Raster to an xarray DataArray object."""
         import xarray
         import rioxarray  # noqa
 

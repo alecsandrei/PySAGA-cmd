@@ -33,7 +33,9 @@ extras = [
     "matplotlib",
     "rasterio",
     "geopandas",
-    "pyogrio"
+    "pyogrio",
+    "xarray",
+    "rioxarray",
 ]
 dev = [
     "twine",
