@@ -45,8 +45,10 @@ class Raster:
     to_numpy: Returns the Raster object as a np.array.
     """
 
-    def __init__(self, path: PathLike):
-        self.path = Path(path)
+    path: PathLike
+
+    def __post_init__(self):
+        self.path = Path(self.path)
         if not self.path.suffix:
             self.path = infer_file_extension(self.path)
 
@@ -203,8 +205,10 @@ class Vector:
     plot: Plots the vector object.
     """
 
-    def __init__(self, path: PathLike):
-        self.path = Path(path)
+    path: PathLike
+
+    def __post_init__(self):
+        self.path = Path(self.path)
         if not self.path.suffix:
             self.path = infer_file_extension(self.path)
 

@@ -879,7 +879,7 @@ def get_formats(
     gdal_formats = saga / 'io_gdal' / 10
 
     # Create an empty temporary file.
-    with tempfile.NamedTemporaryFile() as tmp:
+    with tempfile.NamedTemporaryFile(delete=False) as tmp:
         path = Path(tmp.name)
 
         gdal_formats_execute = partial(
