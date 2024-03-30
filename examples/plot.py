@@ -60,6 +60,6 @@ if __name__ == '__main__':
     plt.tight_layout()
     plt.show()
 
-    fig.savefig('../assets/plot1.png', dpi=300, bbox_inches='tight')
+    fig.savefig('../media/plot1.png', dpi=300, bbox_inches='tight')
 
     saga.temp_dir_cleanup()

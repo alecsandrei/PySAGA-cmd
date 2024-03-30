@@ -153,11 +153,11 @@ ax4.set_xlabel('Radians')
 plt.tight_layout()
 plt.show()
 
-fig.savefig('../assets/plot1.png', dpi=300, bbox_inches='tight')
+fig.savefig('../media/plot1.png', dpi=300, bbox_inches='tight')
 
 saga.temp_dir_cleanup()
 ```
-<img src="https://github.com/alecsandrei/PySAGA-cmd/blob/master/assets/plot1.png?raw=true" />
+<img src="https://github.com/alecsandrei/PySAGA-cmd/blob/master/media/plot1.png?raw=true" />
 
 For extra information on how to use the package, you can also look at the [notebooks](https://github.com/alecsandrei/PySAGA-cmd/tree/master/examples/notebooks) inside the examples folder on the Github page.
 

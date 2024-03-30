@@ -237,4 +237,4 @@ class Vector:
 
 def get_sample_dem() -> Raster:
     """Get a sample DEM of an area in North-Eastern Romania."""
-    return Raster(HERE / '../assets/DEM_30m.tif')
+    return Raster(HERE / 'assets/DEM_30m.tif')
