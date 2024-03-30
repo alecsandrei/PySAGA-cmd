@@ -206,8 +206,8 @@ class SAGACMDSearcher:
 
     def _search_windows(self) -> Optional[Path]:
         dirs = (
-            'C:/Program Files/SAGA-GIS',
             'C:/Program Files/SAGA',
+            'C:/Program Files/SAGA-GIS',
             'C:/Program Files (x86)/SAGA-GIS',
             'C:/SAGA-GIS',
             'C:/OSGeo4W',
