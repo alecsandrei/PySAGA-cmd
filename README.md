@@ -165,4 +165,5 @@ For extra information on how to use the package, you can also look at the [noteb
 # TODOs
 
 - [x] Implement recursive search for the saga_cmd file.
-- [ ] Improve the verbose behaviour of tool execution (add a progress bar?).
+- [x] Improve the verbose behaviour of tool execution (add a progress bar?).
+- [ ] Improve flags.
