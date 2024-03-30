@@ -25,6 +25,7 @@ class TerrainAnalysis(Executable):
     def __init__(self, dem: Raster, saga_cmd_path: Optional[Path] = None):
         self.saga = SAGA(saga_cmd_path)
         self.dem = dem
+        # NOTE: Change this next Path to whatever path you would like.
         self.out_dir = Path(self.dem.path).parent
 
         self.tools: list[Callable[[], ToolOutput]] = [
