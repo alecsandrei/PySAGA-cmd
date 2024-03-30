@@ -1,6 +1,7 @@
 include LICENSE
 include README.md
 include *.cff
+recursive-include PySAGA_cmd *.tif
 
 exclude main.py
 recursive-exclude data *
