@@ -167,4 +167,4 @@ For extra information on how to use the package, you can also look at the [noteb
 - [x] Implement recursive search for the saga_cmd file.
 - [x] Improve the verbose behaviour of tool execution (add a progress bar?).
 - [ ] Improve flags.
-- [ ] Add "elapsed time" to progress bar.
+- [x] Add "elapsed time" to progress bar.
