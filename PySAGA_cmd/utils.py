@@ -152,9 +152,11 @@ def progress_bar_gen(
             j = 100
         x = int(size*j/count)
         elapsed = datetime.timedelta(seconds=round(time.time()-start))
+        bar = f"[{u'█'*x}{('.'*(size-x))}]"
+        progress = f'{j}/{count}%'
+        elapsed_str = f"Elapsed time: {elapsed} {len(str(elapsed))*' '}"
         print(
-            f"[{u'█'*x}{('.'*(size-x))}] {j}/{count}%"
-            + f" | Elapsed time: {elapsed} {len(str(elapsed))*' '}",
+            f'{bar} {progress + " | " + elapsed_str:>40}',
             end='\r',
             flush=True,
             file=out
