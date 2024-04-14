@@ -16,6 +16,7 @@ from typing import (
     Any,
     runtime_checkable,
     Literal,
+    NamedTuple
 )
 from pathlib import Path
 import subprocess
@@ -32,7 +33,7 @@ import csv
 import re
 from collections import (
     UserDict,
-    abc
+    abc,
 )
 
 from PySAGA_cmd.utils import (
@@ -228,7 +229,10 @@ class SAGAExecutable(Executable):
         self._flag = Flag()
 
 
-MajMinPatch = tuple[int, int, int]
+class Version(NamedTuple):
+    major: int
+    minor: int
+    patch: int
 
 
 @dataclass
@@ -267,7 +271,7 @@ class SAGA(SAGAExecutable):
     """
 
     saga_cmd: Optional[Union[PathLike, SAGACMD]] = field(default=None)
-    version: Optional[MajMinPatch] = field(default=None)
+    version: Optional[Version] = field(default=None)
     _raster_formats: Optional[set[str]] = field(
         init=False, default=None, repr=False
     )
@@ -848,7 +852,7 @@ class ToolOutput(Output):
         return outputs
 
 
-def get_saga_version(saga: SAGA) -> Optional[MajMinPatch]:
+def get_saga_version(saga: SAGA) -> Optional[Version]:
     """Get's the SAGA version using the version flag."""
     saga.flag = 'version'
     stdout = saga.execute().stdout
@@ -858,7 +862,7 @@ def get_saga_version(saga: SAGA) -> Optional[MajMinPatch]:
     match = re.search(pattern, stdout)
     if match:
         maj, min_, patch = tuple(map(int, match.group(0).split('.')))
-        return (maj, min_, patch)
+        return Version(maj, min_, patch)
     else:
         print(
             f'Could not parse SAGA version from stdout {stdout}.',
@@ -899,12 +903,12 @@ def get_formats(
                 gdal_formats_execute(type='0')
             else:
                 gdal_formats_execute(type='1')
-        except:
+        except Exception:
             return None
         else:
             reader = csv.reader(
                 [string.decode('utf-8') for string in tmp.readlines()],
-                dialect="excel-tab"
+                dialect='excel-tab'
             )
             last_row = tuple(reader)[-1]
             third_column = last_row[2]

@@ -153,7 +153,8 @@ def progress_bar_gen(
         x = int(size*j/count)
         elapsed = datetime.timedelta(seconds=round(time.time()-start))
         print(
-            f"[{u'█'*x}{('.'*(size-x))}] {j}/{count}% | Elapsed time: {elapsed} {len(str(elapsed))*' '}",
+            f"[{u'█'*x}{('.'*(size-x))}] {j}/{count}%"
+            + f" | Elapsed time: {elapsed} {len(str(elapsed))*' '}",
             end='\r',
             flush=True,
             file=out
@@ -193,9 +194,9 @@ class SAGACMDSearcher:
 
     def _search_mac_os(self) -> Optional[Path]:
         dirs = (
-            '/Applications/SAGA.app/Contents/MacOS'
-            '/usr/local/bin'
-            '/Applications/QGIS.app/Contents/MacOS/bin'
+            '/Applications/SAGA.app/Contents/MacOS',
+            '/usr/local/bin',
+            '/Applications/QGIS.app/Contents/MacOS/bin',
         )
         file_name = 'saga_cmd'
         if (path := self._search_file(dirs, file_name)) is not None:
