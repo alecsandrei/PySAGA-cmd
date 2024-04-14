@@ -18,6 +18,8 @@ from enum import (
     Enum,
     auto
 )
+import time
+import datetime
 
 
 HERE = Path(__file__).parent
@@ -141,6 +143,7 @@ def progress_bar_gen(
     size = 60
     j = 0
     out = sys.stdout
+    start = time.time()
     while True:
         j = yield  # type: ignore
         if j is None:
@@ -148,9 +151,9 @@ def progress_bar_gen(
         elif j > 100:
             j = 100
         x = int(size*j/count)
-
+        elapsed = datetime.timedelta(seconds=round(time.time()-start))
         print(
-            f"[{u'█'*x}{('.'*(size-x))}] {j}/{count}% {len(str(j))*' '}",
+            f"[{u'█'*x}{('.'*(size-x))}] {j}/{count}% | Elapsed time: {elapsed} {len(str(elapsed))*' '}",
             end='\r',
             flush=True,
             file=out

@@ -885,25 +885,28 @@ def get_formats(
         gdal_formats_execute = partial(
             gdal_formats.execute,
             formats=path,
-            acces=2,
+            access=2,
             recognized=1,
             verbose=False,
             infer_obj_type=False,
         )
         assert type_ in ['raster', 'vector']
 
-        if type_ == 'raster':
-            gdal_formats_execute(type='0')
+        try:
+            if type_ == 'raster':
+                gdal_formats_execute(type='0')
+            else:
+                gdal_formats_execute(type='1')
+        except:
+            return None
         else:
-            gdal_formats_execute(type='1')
-
-        reader = csv.reader(
-            [string.decode('utf-8') for string in tmp.readlines()],
-            dialect="excel-tab"
-        )
-        last_row = tuple(reader)[-1]
-        third_column = last_row[2]
-        extensions = re.findall(r'\.(\w+)', third_column)
+            reader = csv.reader(
+                [string.decode('utf-8') for string in tmp.readlines()],
+                dialect="excel-tab"
+            )
+            last_row = tuple(reader)[-1]
+            third_column = last_row[2]
+            extensions = re.findall(r'\.(\w+)', third_column)
     return set(extensions)
 
 
