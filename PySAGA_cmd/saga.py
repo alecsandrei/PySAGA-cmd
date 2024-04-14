@@ -305,9 +305,9 @@ class SAGA(SAGAExecutable):
 
     def get_vector_formats(self):
         if self._vector_formats is None:
-            formats = get_formats(self, type_='vector')
-            if formats is None:
-                formats = set()
+            self._vector_formats = get_formats(self, type_='vector')
+            if self._vector_formats is None:
+                self._vector_formats = set()
         return self._vector_formats
 
     @property
