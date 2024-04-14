@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import (
     Callable,
@@ -22,11 +23,19 @@ from PySAGA_cmd import get_sample_dem
 class TerrainAnalysis(Executable):
     """This class can be used to calculate terrain analysis grids."""
 
-    def __init__(self, dem: Raster, saga_cmd_path: Optional[Path] = None):
+    def __init__(
+        self,
+        dem: Raster,
+        saga_cmd_path: Optional[Path] = None,
+        out_dir: Optional[Path] = None
+    ):
         self.saga = SAGA(saga_cmd_path)
         self.dem = dem
-        # NOTE: Change this next Path to whatever path you would like.
-        self.out_dir = Path(self.dem.path).parent
+        self.out_dir: Path = out_dir  # type: ignore
+        if out_dir is None:
+            self.out_dir = Path(self.dem.path).parent
+        elif isinstance(self.out_dir, str):
+            self.out_dir = Path(self.out_dir)
 
         self.tools: list[Callable[[], ToolOutput]] = [
             self.index_of_convergence,
@@ -307,5 +316,6 @@ class TerrainAnalysis(Executable):
 
 if __name__ == '__main__':
     sample_dem = get_sample_dem()
-    analysis = TerrainAnalysis(sample_dem)
+    out_dir = Path(os.path.normpath(os.path.expanduser("~/Desktop")))
+    analysis = TerrainAnalysis(sample_dem, out_dir=out_dir)
     analysis.execute()
