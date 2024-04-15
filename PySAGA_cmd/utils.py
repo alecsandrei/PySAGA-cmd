@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 import os
+import io
 import sys
 import subprocess
 from typing import (
@@ -117,10 +118,12 @@ def infer_file_extension(path_to_file: Path) -> Path:
 def dynamic_print(popen: subprocess.Popen[str]):
     progress_bar = progress_bar_gen()
     progress_bar.send(None)
+    stdout_lines: list[str] = []
     while True:
         if popen.stdout is None:
             break
         output = popen.stdout.readline()
+        stdout_lines.append(output)
         if not output and popen.poll() is not None:
             break
         if output:
@@ -132,6 +135,7 @@ def dynamic_print(popen: subprocess.Popen[str]):
             if output_digits is not None:
                 progress_bar.send(int(output_digits.group(0)))
     print()
+    popen.stdout = io.StringIO(''.join(stdout_lines))
     return popen.poll()
 
 

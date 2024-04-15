@@ -566,10 +566,11 @@ class Tool(SAGAExecutable):
         if verbose:
             print(self.get_verbose_message())
 
-        command_partial = partial(self.command.execute, verbose)
+        command_partial = partial(self.command.execute, verbose=verbose)
         saga = self.library.saga
         if (
-            not any((saga._raster_formats, saga._vector_formats))
+            all(formats is None for formats in (saga._raster_formats,
+                                                saga._vector_formats))
             and infer_obj_type
         ):
             with concurrent.futures.ThreadPoolExecutor() as executor:
@@ -722,6 +723,7 @@ class Command(abc.Sequence):
             text=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
+            stdin=subprocess.PIPE,
             startupinfo=startupinfo
         )
         if verbose:
@@ -750,9 +752,9 @@ class Output:
     saga_executable: Union[SAGA, Library, Tool]
     completed_process: subprocess.Popen
     ignore_stderr: bool
-    stdout: Optional[str] = field(init=False, default=None)
-    stderr: Optional[str] = field(init=False, default=None)
-    stdin: Optional[str] = field(init=False, default=None)
+    stdout: Optional[str] = field(init=False, default=None, repr=False)
+    stderr: Optional[str] = field(init=False, default=None, repr=False)
+    stdin: Optional[str] = field(init=False, default=None, repr=False)
 
     def __post_init__(self) -> None:
         if self.completed_process.stdout is not None:
@@ -764,7 +766,10 @@ class Output:
             if not self.ignore_stderr:
                 raise ExecutionError(read, self.saga_executable)
             self.stderr = read
-        if self.completed_process.stdin is not None:
+        if (
+            self.completed_process.stdin is not None
+            and self.completed_process.stdin.readable()
+        ):
             self.stdin = self.completed_process.stdin.read()
 
 
@@ -795,7 +800,7 @@ class ToolOutput(Output):
     """
 
     saga_executable: Tool
-    _outputs: Optional[Files] = field(init=False, default=None)
+    _files: Optional[Files] = field(init=False, default=None)
 
     # TODO: add support for output tables aswell.
 
@@ -829,12 +834,12 @@ class ToolOutput(Output):
 
     @property
     def files(self) -> Files:
-        if self._outputs is None:
-            self._outputs = self.get_files()
-        return self._outputs
+        if self._files is None:
+            self._files = self.get_files()
+        return self._files
 
     def get_files(self) -> Files:
-        outputs: Files = {}
+        files: Files = {}
         for param, value in self.saga_executable.parameters.items():
             try:
                 path = Path(value)
@@ -844,12 +849,12 @@ class ToolOutput(Output):
                 if not path.is_file():
                     continue
                 if self.is_raster(path):
-                    outputs[param] = Raster(path)
+                    files[param] = Raster(path)
                 elif self.is_vector(path):
-                    outputs[param] = Vector(path)
+                    files[param] = Vector(path)
                 else:
-                    outputs[param] = path
-        return outputs
+                    files[param] = path
+        return files
 
 
 def get_saga_version(saga: SAGA) -> Optional[Version]:
