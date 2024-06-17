@@ -511,8 +511,7 @@ class Tool(SAGAExecutable):
 
     def _set_attr_params(self):
         """Sets the parameters of the tool as attributes."""
-        for param, value in self.parameters.items():
-            setattr(self, param, value)
+        self.__dict__.update(**self.parameters)
 
     def __getattr__(self, name: str) -> Any:
         pass
