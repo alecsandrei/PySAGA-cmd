@@ -168,18 +168,20 @@ class Parameters(UserDict[str, str]):
         It also replaces 'temp' named files with a temporary unique path.
         """
         value = str(value)
-        path = Path(value)
-        exists = path.exists()
-        suffix = path.suffix
-        if path.stem == 'temp' and not exists:
-            unix = str(time.time()).split('.', maxsplit=1)[0]
-            value = str(
-                self.tool.library.saga.temp_dir / f'{param}_{unix}{suffix}'
-            )
-        elif exists and not suffix:
-            suffix = infer_file_extension(path).suffix
-            value = str(path.with_suffix(suffix))
-        return super().__setitem__(param, value)
+        try:
+            path = Path(value)
+            exists = path.exists()
+            suffix = path.suffix
+            if path.stem == 'temp' and not exists:
+                unix = str(time.time()).split('.', maxsplit=1)[0]
+                value = str(
+                    self.tool.library.saga.temp_dir / f'{param}_{unix}{suffix}'
+                )
+            elif exists and not suffix:
+                suffix = infer_file_extension(path).suffix
+                value = str(path.with_suffix(suffix))
+        finally:
+            return super().__setitem__(param, value)
 
     def __str__(self) -> str:
         return ' '.join(self.formatted)
